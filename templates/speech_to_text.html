@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Speech to Text - TARS DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon"/>
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --btn-dark: #20002C;
+      --btn-black: #000;
+      --button-purple: #A259FF;
+      --button-black: #000;
+      --button-dark: #31004A;
+      --button-purple-hover: #c193ff;
+    }
+    body {
+      margin: 0; padding: 0; min-height: 100vh;
+      background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+      font-family: 'Inter', Arial, sans-serif; color: var(--white);
+      display: flex; flex-direction: column;
+    }
+    nav { background: var(--navbar-bg); height: 72px; display: flex; align-items: center; padding: 0 48px; box-sizing: border-box; z-index: 1000;}
+    .brand-logo { display: flex; align-items: center; height: 100%; margin-right: 21px; margin-top: 2px;}
+    .brand-logo img { height: 62px; width: 138px; object-fit: contain; border-radius: 10px; user-select: none; background: transparent; }
+    .nav-links { margin-left: auto; display: flex; align-items: center; gap: 1.7rem;}
+    .nav-links a, .dropdown-toggle { color: var(--white); font-weight: 600; text-decoration: none; font-size: 1.13rem; padding: 10px 18px 8px 18px; border-radius: 8px; background: none; border: none; outline: none; opacity: 0.93; transition: background 0.19s, color 0.18s, box-shadow 0.19s;}
+    .nav-links a.active, .nav-links a:hover, .dropdown-toggle:focus, .dropdown-toggle:hover {opacity: 1; color: var(--white);}
+    .logout-link { color: #ff4e54; font-weight: 600; border: 1.5px solid #ff4e54; background: none; border-radius: 8px; padding: 8px 18px; margin-left: 22px;}
+    .logout-link:hover { background: #28102b; color: #fff;}
+    .dropdown { position: relative; display: inline-block;}
+    .dropdown-toggle::after { content: '▼'; margin-left: 7px; font-size: 0.83em; color: var(--white);}
+    .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after { transform: rotate(180deg);}
+    .dropdown-content { display:none; position:absolute; top:58px; left:0; background:#fff; box-shadow:0 14px 42px 0 rgba(40,25,67,0.22),0 2px 12px 0 rgba(40,25,67,0.12); border-radius:17px; z-index:9999; padding:15px 26px 11px 17px; min-width:410px; max-width:540px; grid-template-columns:repeat(2,1fr); gap:9px 11px;}
+    .dropdown:focus-within .dropdown-content, .dropdown:hover .dropdown-content{ display:grid; opacity:1; visibility:visible; pointer-events:all;}
+    .dropdown-content a { color:#14131c; font-weight:600; background:#fff; padding:11px 20px 9px 13px; border-radius:10px; font-size:1rem; transition:background 0.13s, color 0.11s, box-shadow 0.19s; text-align:left;}
+    .dropdown-content a:hover, .dropdown-content a:focus { background:#dedcff; color:#21003b;}
+    @media (max-width:950px){ nav{padding:0 13px;}.brand-logo img{height:48px;width:98px;}.nav-links{gap:1rem;}.dropdown-content{min-width:240px; padding:11px 6px 8px 7px;} }
+    @media (max-width:680px){ nav{flex-direction:column;height:auto; padding:0 0 7px 0;}.brand-logo{margin:5px 0 4px 0;}.nav-links{width:100%; gap:7px;justify-content:flex-start;} }
+
+    /* --- Main SPEECH TO TEXT CARD --- */
+    .speech-container-outer { min-height: calc(100vh - 110px); width: 100vw; display: flex; align-items: center; justify-content: center; flex: 1 0 auto; }
+    .speech-card {
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 4px 40px rgba(40, 0, 85, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 705px;
+      width: 94vw;
+      padding: 38px 36px 30px 36px;
+      margin: 46px auto 40px auto;
+    }
+    .speech-header-row {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 3px;
+    }
+    .speech-header-row img {
+      width: 39px; height: 39px; user-select: none; -webkit-user-drag: none;
+      object-fit: contain; margin-bottom: -2px;
+    }
+    .speech-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #250137;
+      flex: 1 0 auto; letter-spacing: 0.01em;
+    }
+    .speech-form-section {
+      width: 100%;
+      display: flex; flex-direction: column; align-items: stretch;
+    }
+
+    /* Live Speech section */
+    .live-box {
+      width: 100%;
+      background: #F9F8FC;
+      border: 1.5px solid #E9E6F7;
+      border-radius: 12px;
+      margin-top: 9px;
+      margin-bottom: 20px;
+      padding: 15px 17px 23px 17px;
+      display: flex;
+      flex-direction: column;
+    }
+    #liveTranscriptBox {
+      min-height: 84px;
+      max-height: 165px;
+      resize: vertical;
+      color: #3E0069;
+      font-size: 1.08rem;
+      font-family: 'Inter', Arial, sans-serif;
+      background: transparent;
+      border: none;
+      outline: none;
+      margin-bottom: 17px;
+    }
+    .speech-btn-row {
+      display: flex; gap: 14px; margin-bottom: 0;
+    }
+    .speech-btn {
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+      box-shadow: 0 2px 11px rgba(98, 0, 148, 0.06);
+      padding: 11px 26px;
+    }
+    .speech-btn.start { background: var(--btn-dark); color: #fff;}
+    .speech-btn.start:hover { background: #400457;}
+    .speech-btn.save { background: var(--accent); color: #fff;}
+    .speech-btn.save:hover { background: var(--button-purple-hover);}
+    .speech-btn.preview { background: var(--btn-black); color: #fff;}
+    .speech-btn.preview:hover { background: #475163; }
+
+    /* MP3 to Text section divider */
+    .mp3-section-title {
+      font-size: 1.16rem;
+      color: #26002b;
+      font-weight: 700;
+      margin: 31px 0 16px 1px;
+      letter-spacing: 0.01em;
+      text-align: left;
+      width: 100%;
+    }
+    .mp3-file-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .custom-file-upload {
+      background-color: #20002C;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 12px 26px;
+      border: none;
+      border-radius: 9px;
+      box-shadow: 0 2px 8px rgba(98, 0, 148, 0.09);
+      cursor: pointer;
+      outline: none;
+      display: inline-block;
+      transition: background 0.17s;
+      margin-right: 8px;
+    }
+    .custom-file-upload:hover { background: #400457; }
+    .file-label { color: #250137; font-size: 1em; margin-left: 5px;}
+    input[type="file"] {display: none;}
+
+    /* Audio controls row */
+    .audio-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      margin: 13px 0 18px 0;
+    }
+    .audio-btn.playpause {
+      background: var(--accent); color: #fff; border: none; border-radius: 50%; width: 38px; height: 38px; font-size: 1.4rem; display: flex; justify-content: center; align-items: center; transition: background 0.13s;
+    }
+    .audio-btn.playpause:hover { background: var(--button-purple-hover);}
+    .audio-progress-bar {
+      flex: 1 1 auto; height: 7px; background: #E7D2FF; border-radius: 7px; position: relative; overflow: hidden;
+      margin: 0 7px; cursor: pointer;
+    }
+    .audio-progress-bar .progress {
+      height: 100%; background: var(--accent); border-radius: 7px; width: 40%;
+      position:absolute; top:0; left:0;
+    }
+    .audio-duration { color: #250137; font-size: 1rem; margin-left: 7px;}
+    .audio-volume { margin-left: 11px; color: #250137; font-size: 1.28em; }
+    .speech-btn.transcript-audio {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      border-radius: 8px;
+      font-size: 1rem;
+      padding: 12px 36px;
+      margin: 12px 0 12px 0;
+      border: none; cursor: pointer; transition: background 0.13s, box-shadow 0.15s;
+    }
+    .speech-btn.transcript-audio:hover { background: var(--button-purple-hover);}
+    .speech-btn.preview { background: var(--btn-black);}
+    .speech-btn.preview:hover { background: #352348;}
+    @media (max-width:790px) {
+      .speech-card {max-width:97vw; min-width: unset; padding: 18px 4vw 14px 4vw;}
+      .speech-header-row {flex-direction: column; gap: 10px;}
+      .audio-row {flex-direction: column;}
+      .audio-progress-bar {width: 90vw;}
+    }
+    footer {text-align: center;padding: 18px 0 8px 0; background: var(--footer-bg); color: #e0e0e0; font-size: 0.95em; margin-top: auto; box-shadow: none;}
+  </style>
+</head>
+<body>
+  <!-- ✦ Magnificent NAVIGATION BAR ✦ -->
+  <nav>
+    <div class="brand-logo">
+      <img src="/static/logo.png" alt="DocShift Logo" draggable="false"/>
+    </div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/document-screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+    </div>
+  </nav>
+
+  <!-- ===================== MAIN CONTENT ====================== -->
+  <div class="speech-container-outer">
+    <div class="speech-card">
+      <div class="speech-header-row">
+        <img src="/static/Frame12.png" alt="speech to text icon" />
+        <div class="speech-title">Live Speech to Text</div>
+      </div>
+
+      <div class="speech-form-section">
+        <!-- Live Speech -->
+        <div class="live-box">
+          <textarea id="liveTranscriptBox" placeholder="Your live transcript will appear here..." readonly></textarea>
+          <div class="speech-btn-row">
+            <button type="button" class="speech-btn start" id="startSpeechBtn">Start speech</button>
+            <button type="button" class="speech-btn save" id="saveTranscriptBtn">Save Transcript</button>
+            <button type="button" class="speech-btn preview" id="previewBtn">Preview</button>
+          </div>
+        </div>
+
+        <!-- MP3/WAV to Text -->
+        <div class="mp3-section-title">Audio to Text (MP3/WAV)</div>
+        <form id="mp3ToTextForm" enctype="multipart/form-data" style="width:100%">
+          <div class="mp3-file-row">
+            <label class="custom-file-upload" for="mp3FileInput">Browse</label>
+            <input id="mp3FileInput" type="file" name="mp3FileInput" accept="audio/mp3,audio/mpeg,audio/wav,audio/wave"/>
+            <span class="file-label" id="mp3FileName">No file is selected</span>
+          </div>
+
+          <!-- Audio Player Row (hidden until file is selected) -->
+          <div class="audio-row" id="audioPlayerRow" style="display: none;">
+            <button type="button" class="audio-btn playpause" id="playPauseBtn">▶️</button>
+            <div class="audio-progress-bar" id="progressBar">
+              <div class="progress" id="progressFill" style="width: 0%;"></div>
+            </div>
+            <span class="audio-duration" id="audioDuration">0:00</span>
+            <span class="audio-volume">🔊</span>
+          </div>
+          <audio id="audioPlayer" style="display: none;" preload="metadata"></audio>
+          <button type="button" class="speech-btn transcript-audio" id="transcriptAudioBtn">Transcript audio</button>
+          <button type="button" class="speech-btn preview" id="previewAudioBtn">Preview</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <footer>
+    © 2025 TARS DocShift. All rights reserved.
+  </footer>
+
+    <script>
+        let recognition;
+        let isListening = false;
+        let fullTranscript = "";
+
+        function initRecognition() {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = function(event) {
+                let interim = "";
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        fullTranscript += transcript + " ";
+                    } else {
+                        interim += transcript;
+                    }
+                }
+                document.getElementById('liveTranscriptBox').value = fullTranscript + interim;
+            };
+
+            recognition.onend = function() {
+                if (isListening) recognition.start();
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                document.getElementById('liveTranscriptBox').value = 'Error: ' + event.error;
+            };
+        }
+
+        function toggleListening() {
+            if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+                alert("Speech Recognition not supported in your browser.");
+                return;
+            }
+
+            if (!recognition) initRecognition();
+
+            if (isListening) {
+                recognition.stop();
+                isListening = false;
+                document.getElementById("startSpeechBtn").textContent = "Start speech";
+            } else {
+                recognition.start();
+                isListening = true;
+                document.getElementById("startSpeechBtn").textContent = "Stop speech";
+            }
+        }
+
+        function sendTranscript() {
+            fetch('/save_transcript', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transcript: fullTranscript.trim() })
+            })
+            .then(res => res.json())
+            .then(data => alert(data.message))
+            .catch(err => {
+                console.error(err);
+                alert('Error saving transcript');
+            });
+        }
+
+        function previewTranscript() {
+            const transcript = document.getElementById('liveTranscriptBox').value;
+            if (transcript.trim()) {
+                alert('Transcript Preview:\n\n' + transcript);
+            } else {
+                alert('No transcript available to preview.');
+            }
+        }
+
+        function previewAudio() {
+            const fileInput = document.getElementById('mp3FileInput');
+            const audioPlayer = document.getElementById('audioPlayer');
+
+            if (fileInput.files.length > 0) {
+                // If audio player is already loaded with the file, just play it
+                if (audioPlayer.src) {
+                    audioPlayer.currentTime = 0; // Start from beginning
+                    audioPlayer.play();
+                    document.getElementById('playPauseBtn').textContent = '⏸️';
+                } else {
+                    alert('Please wait for the audio file to load.');
+                }
+            } else {
+                alert('Please select an MP3 file first.');
+            }
+        }
+
+        async function uploadAudio() {
+            const fileInput = document.getElementById('mp3FileInput');
+
+            if (fileInput.files.length === 0) {
+                alert('Please select an audio file (MP3 or WAV).');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const allowedTypes = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/wave'];
+            const fileExtension = file.name.toLowerCase().split('.').pop();
+            const allowedExtensions = ['mp3', 'wav'];
+
+            if (!allowedExtensions.includes(fileExtension)) {
+                alert('Please select a valid MP3 or WAV audio file.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audioFile', file);
+
+            try {
+                document.getElementById('transcriptAudioBtn').textContent = "⏳ Transcribing...";
+                document.getElementById('transcriptAudioBtn').disabled = true;
+
+                const response = await fetch('/upload_audio', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.transcript) {
+                    // Show transcript in a more user-friendly way
+                    const transcriptText = result.transcript;
+                    const displayText = transcriptText.length > 500 
+                        ? transcriptText.substring(0, 500) + '...\n\n[Full transcript available for download]'
+                        : transcriptText;
+                    
+                    alert('Audio Transcript:\n\n' + displayText);
+                } else if (result.error) {
+                    // Check if it's an FFmpeg error and provide helpful message
+                    if (result.error.includes('FFmpeg')) {
+                        alert('FFmpeg Error: ' + result.error + '\n\nTip: Try uploading a WAV file instead of MP3 for better compatibility.');
+                    } else {
+                        alert('Error: ' + result.error);
+                    }
+                } else {
+                    alert('Error: Unknown error occurred during transcription.');
+                }
+            } catch (err) {
+                console.error('Upload error:', err);
+                alert('❌ Network error: ' + err.message + '\n\nPlease check your internet connection and try again.');
+            } finally {
+                document.getElementById('transcriptAudioBtn').textContent = "Transcript audio";
+                document.getElementById('transcriptAudioBtn').disabled = false;
+            }
+        }
+
+        // File input change handler
+        function updateFileName() {
+            const fileInput = document.getElementById('mp3FileInput');
+            const fileLabel = document.getElementById('mp3FileName');
+            const audioPlayerRow = document.getElementById('audioPlayerRow');
+            const audioPlayer = document.getElementById('audioPlayer');
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileExtension = file.name.toLowerCase().split('.').pop();
+                const allowedExtensions = ['mp3', 'wav'];
+
+                if (!allowedExtensions.includes(fileExtension)) {
+                    alert('Please select a valid MP3 or WAV audio file.');
+                    fileInput.value = ''; // Clear the input
+                    fileLabel.textContent = 'No file is selected';
+                    audioPlayerRow.style.display = 'none';
+                    audioPlayer.src = '';
+                    return;
+                }
+
+                fileLabel.textContent = file.name;
+                
+                // Show audio player and load the file
+                audioPlayerRow.style.display = 'flex';
+                const url = URL.createObjectURL(file);
+                audioPlayer.src = url;
+                audioPlayer.load();
+                
+                // Update duration when metadata loads
+                audioPlayer.addEventListener('loadedmetadata', function() {
+                    document.getElementById('audioDuration').textContent = formatTime(audioPlayer.duration);
+                });
+                
+                // Reset play button
+                document.getElementById('playPauseBtn').textContent = '▶️';
+                document.getElementById('progressFill').style.width = '0%';
+            } else {
+                fileLabel.textContent = 'No file is selected';
+                audioPlayerRow.style.display = 'none';
+                audioPlayer.src = '';
+            }
+        }
+
+        // Audio player controls
+        function togglePlayPause() {
+            const audioPlayer = document.getElementById('audioPlayer');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+                playPauseBtn.textContent = '⏸️';
+            } else {
+                audioPlayer.pause();
+                playPauseBtn.textContent = '▶️';
+            }
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const audioPlayer = document.getElementById('audioPlayer');
+            const progressFill = document.getElementById('progressFill');
+            const audioDuration = document.getElementById('audioDuration');
+            
+            if (audioPlayer.duration) {
+                const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progressFill.style.width = progress + '%';
+                audioDuration.textContent = formatTime(audioPlayer.currentTime) + ' / ' + formatTime(audioPlayer.duration);
+            }
+        }
+
+        // Format time helper
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return minutes + ':' + (remainingSeconds < 10 ? '0' : '') + remainingSeconds;
+        }
+
+        // Click on progress bar to seek
+        function seekAudio(event) {
+            const audioPlayer = document.getElementById('audioPlayer');
+            const progressBar = document.getElementById('progressBar');
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const width = rect.width;
+            const percentage = clickX / width;
+            
+            if (audioPlayer.duration) {
+                audioPlayer.currentTime = percentage * audioPlayer.duration;
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('startSpeechBtn').addEventListener('click', toggleListening);
+            document.getElementById('saveTranscriptBtn').addEventListener('click', sendTranscript);
+            document.getElementById('previewBtn').addEventListener('click', previewTranscript);
+            document.getElementById('transcriptAudioBtn').addEventListener('click', uploadAudio);
+            document.getElementById('previewAudioBtn').addEventListener('click', previewAudio);
+            document.getElementById('mp3FileInput').addEventListener('change', updateFileName);
+            document.getElementById('playPauseBtn').addEventListener('click', togglePlayPause);
+            document.getElementById('progressBar').addEventListener('click', seekAudio);
+            
+            // Audio player event listeners
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.addEventListener('timeupdate', updateProgress);
+            audioPlayer.addEventListener('ended', function() {
+                document.getElementById('playPauseBtn').textContent = '▶️';
+                document.getElementById('progressFill').style.width = '0%';
+                audioPlayer.currentTime = 0;
+            });
+        });
+    </script>
+</body>
+</html>

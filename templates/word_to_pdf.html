@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Word to PDF - TARS DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --btn-primary: #A259FF;
+      --btn-purple: #A259FF;
+      --btn-black: #000;
+      --btn-dark: #20002C;
+      --btn-preview: #000;
+      --btn-purple-hover: #c193ff;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+    }
+    nav { background: var(--navbar-bg); height: 72px; display: flex; align-items: center; padding: 0 48px; box-sizing: border-box; z-index: 1000; }
+    .brand-logo { display: flex; align-items: center; height: 100%; margin-right: 21px; margin-top: 2px;}
+    .brand-logo img { height: 62px; width: 138px; object-fit: contain; border-radius: 10px; user-select: none; background: transparent; }
+    .nav-links { margin-left: auto; display: flex; align-items: center; gap: 1.7rem;}
+    .nav-links a, .dropdown-toggle { color: var(--white); font-weight: 600; text-decoration: none; font-size: 1.13rem; padding: 10px 18px 8px 18px; border-radius: 8px; background: none; border: none; outline: none; opacity: 0.93; transition: background 0.19s, color 0.18s, box-shadow 0.19s;}
+    .nav-links a.active, .nav-links a:hover, .dropdown-toggle:focus, .dropdown-toggle:hover {opacity: 1; color: var(--white);}
+    .logout-link { color: #ff4e54; font-weight: 600; border: 1.5px solid #ff4e54; background: none; border-radius: 8px; padding: 8px 18px; margin-left: 22px;}
+    .logout-link:hover { background: #28102b; color: #fff;}
+    .dropdown { position: relative; display: inline-block;}
+    .dropdown-toggle::after { content: '▼'; margin-left: 7px; font-size: 0.83em; color: var(--white);}
+    .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after { transform: rotate(180deg);}
+    .dropdown-content { display:none; position:absolute; top:58px; left:0; background:#fff; box-shadow:0 14px 42px 0 rgba(40,25,67,0.22),0 2px 12px 0 rgba(40,25,67,0.12); border-radius:17px; z-index:9999; padding:15px 26px 11px 17px; min-width:410px; max-width:540px; grid-template-columns:repeat(2,1fr); gap:9px 11px; }
+    .dropdown:focus-within .dropdown-content, .dropdown:hover .dropdown-content{ display:grid; opacity:1; visibility:visible; pointer-events:all;}
+    .dropdown-content a { color:#14131c; font-weight:600; background:#fff; padding:11px 20px 9px 13px; border-radius:10px; font-size:1rem; transition:background 0.13s, color 0.11s, box-shadow 0.19s; text-align:left;}
+    .dropdown-content a:hover, .dropdown-content a:focus { background:#dedcff; color:#21003b;}
+    @media (max-width:950px){ nav{padding:0 13px;}.brand-logo img{height:48px;width:98px;}.nav-links{gap:1rem;}.dropdown-content{min-width:240px; padding:11px 6px 8px 7px;} }
+    @media (max-width:680px){ nav{flex-direction:column;height:auto; padding:0 0 7px 0;}.brand-logo{margin:5px 0 4px 0;}.nav-links{width:100%; gap:7px;justify-content:flex-start;} }
+
+    .word2pdf-outer { min-height: calc(100vh - 100px); display:flex; align-items:center; justify-content:center; margin:0; padding:0; }
+    .word2pdf-card {
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 4px 40px rgba(40, 0, 85, 0.25);
+      display: flex;
+      align-items: center;
+      max-width: 950px;
+      min-width: 375px;
+      width: 90%;
+      padding: 42px 36px 45px 46px;
+      gap: 60px;
+      margin: 50px auto;
+    }
+    .word2pdf-left {
+      flex: 1 1 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 300px;
+    }
+    .word2pdf-left h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #1A0326;
+      margin: 0 0 14px 0;
+    }
+    .word2pdf-left p { font-size: 1rem; color: #47455A; margin-bottom: 40px; margin-top: 0; max-width: 420px;}
+    .word2pdf-actions {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 22px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    /* Three styled buttons to match image: doc, word, preview */
+    .choose-doc-btn {
+      background-color: #1a0023;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 600;
+      padding: 12px 32px;
+      border: none;
+      border-radius: 9px;
+      box-shadow: 0 2px 8px rgba(98, 0, 148, 0.09);
+      cursor: pointer;
+      letter-spacing: .01em;
+      outline: none;
+      display: inline-block;
+      transition: background 0.15s;
+    }
+    .choose-doc-btn:hover { background: #400457; }
+    .import-word-btn {
+      background: var(--btn-purple);
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 600;
+      padding: 12px 32px;
+      border: none;
+      border-radius: 9px;
+      box-shadow: 0 2px 8px rgba(162, 89, 255, 0.15);
+      cursor: pointer;
+      transition: background 0.13s;
+    }
+    .import-word-btn:hover { background: var(--btn-purple-hover);}
+    .preview-btn {
+      background: #000;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 600;
+      padding: 12px 32px;
+      border-radius: 9px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.13s;
+      box-shadow: 0 2px 8px rgba(44, 0, 85, 0.07);
+    }
+    .preview-btn:hover { background: #475163;}
+
+    input[type="file"] { display: none; }
+    .file-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0 18px 0;
+      font-size: 0.99em;
+      color: #6900ac;
+      min-height: 1.3em;
+    }
+    .remove-btn {
+      background-color: #ff3333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 0.87em;
+      transition: background-color 0.2s;
+    }
+    .remove-btn:hover { background-color: #b6002c;}
+    #statusMessage {
+      margin-top: 22px;
+      font-weight: bold;
+      font-size: 1.07em;
+      min-height: 1.4em;
+      color: #47455A;
+    }
+    .word2pdf-icon {
+      display: flex; align-items: center; justify-content: center; min-width: 180px; margin: 0 5px 0 0;
+    }
+    .word2pdf-icon img {
+      width: 230px; height: 215px; display: block; border-radius: 17px; background: transparent; box-shadow: none; object-fit: contain;
+    }
+    @media (max-width: 880px) {
+      .word2pdf-card { flex-direction: column; gap: 30px; padding: 30px 2vw 32px 2vw;}
+      .word2pdf-icon { margin: 28px auto 0 auto;}
+      .word2pdf-left { align-items: center; text-align: center;}
+      .word2pdf-left h1, .word2pdf-left p { text-align: center; }
+      .word2pdf-actions { justify-content: center;}
+    }
+    footer {
+      text-align: center;
+      padding: 18px 0 8px 0;
+      background: var(--footer-bg);
+      color: #e0e0e0;
+      font-size: 0.95em;
+      margin-top: auto;
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- ✦ Magnificent NAVIGATION BAR ✦ -->
+  <nav>
+    <div class="brand-logo">
+      <img src="/static/logo.png" alt="DocShift Logo" draggable="false" />
+    </div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/document-screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+    </div>
+  </nav>
+
+  <!-- ===================== MAIN CONTENT ====================== -->
+  <div class="word2pdf-outer">
+    <div class="word2pdf-card">
+      <div class="word2pdf-left">
+        <h1>Word to PDF</h1>
+        <p>
+          Make DOC and DOCX files easy to read by converting them to PDF.
+        </p>
+        <form id="wordToPdfForm" enctype="multipart/form-data" style="width:100%">
+          <div class="word2pdf-actions">
+            <label for="file" class="choose-doc-btn">Choose DOC</label>
+            <input type="file" id="file" name="file" accept=".doc,.docx" />
+            <button type="button" id="importWordBtn" class="import-word-btn">Import Word</button>
+            <button type="button" id="previewBtn" class="preview-btn">Preview</button>
+          </div>
+          <div class="file-display" id="fileDisplay" style="display: none;">
+            <span id="fileName"></span>
+            <button type="button" class="remove-btn" id="removeFile">Remove</button>
+          </div>
+        </form>
+        <div id="statusMessage"></div>
+      </div>
+      <div class="word2pdf-icon">
+        <!-- Replace with your own icon -- for the example, /static/WordToPDFIcon.png -->
+        <img src="/static/Frame7.png" alt="word to pdf icon" />
+      </div>
+    </div>
+  </div>
+  <footer>
+    © 2025 TARS DocShift. All rights reserved.
+  </footer>
+
+    <script>
+        // Utility function to set status messages
+        function setStatus(message, isError = false) {
+            const status = document.getElementById('statusMessage');
+            status.textContent = message;
+            status.style.color = isError ? 'red' : '#28a745';
+        }
+
+        // Update file display when a file is selected
+        function updateFileDisplay() {
+            const fileInput = document.getElementById('file');
+            const fileDisplay = document.getElementById('fileDisplay');
+            const fileNameSpan = document.getElementById('fileName');
+            
+            if (fileInput && fileInput.files.length > 0) {
+                fileNameSpan.textContent = fileInput.files[0].name;
+                fileDisplay.style.display = 'flex';
+            } else {
+                fileNameSpan.textContent = '';
+                fileDisplay.style.display = 'none';
+            }
+        }
+
+        // Remove selected file
+        function removeFile() {
+            const fileInput = document.getElementById('file');
+            if (fileInput) {
+                fileInput.value = '';
+                setStatus('');
+                updateFileDisplay();
+            }
+        }
+
+        // Convert Word document to PDF
+        function convertWordToPDF() {
+            const fileInput = document.getElementById('file');
+            const importBtn = document.getElementById('importWordBtn');
+            
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                setStatus('Please select a file first.', true);
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const validExtensions = ['.doc', '.docx'];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!validExtensions.includes(fileExtension)) {
+                setStatus('Please select a .doc or .docx file.', true);
+                return;
+            }
+
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                setStatus('File is too large. Maximum size is 10MB.', true);
+                return;
+            }
+
+            // Disable button and show loading state
+            importBtn.disabled = true;
+            importBtn.textContent = 'Converting...';
+            setStatus('Converting your file, please wait...');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/convert_word_to_pdf', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(errorText => {
+                        let errorMessage = `Server error: ${response.status}`;
+                        if (errorText.includes('<title>Login - TARS DocShift</title>')) {
+                            errorMessage = 'Session expired or not logged in. Please log in and try again.';
+                        }
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            errorMessage = errorData.error || errorMessage;
+                        } catch {
+                            // If not JSON, use the text as is
+                            if (errorText) errorMessage = errorText;
+                        }
+                        throw new Error(errorMessage);
+                    });
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/pdf')) {
+                    return response.text().then(errorText => {
+                        throw new Error(`Invalid response: Expected a PDF file, got ${contentType}. Server response: ${errorText}`);
+                    });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                
+                // Generate filename based on original file
+                const originalName = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+                a.download = originalName + '.pdf';
+                
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                
+                setStatus('Conversion successful! File downloaded.');
+            })
+            .catch(err => {
+                setStatus('Conversion failed: ' + err.message, true);
+            })
+            .finally(() => {
+                importBtn.disabled = false;
+                importBtn.textContent = 'Import Word';
+            });
+        }
+
+        // Preview functionality (opens file in browser)
+        function previewFile() {
+            const fileInput = document.getElementById('file');
+            
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                setStatus('Please select a file first to preview.', true);
+                return;
+            }
+
+            const file = fileInput.files[0];
+            if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+                file.type === 'application/msword') {
+                setStatus('Word files cannot be previewed directly. Please convert to PDF first.', true);
+                return;
+            }
+
+            // For other file types, try to open them
+            const url = URL.createObjectURL(file);
+            window.open(url, '_blank');
+            URL.revokeObjectURL(url);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('file');
+            const removeButton = document.getElementById('removeFile');
+            const importButton = document.getElementById('importWordBtn');
+            const previewButton = document.getElementById('previewBtn');
+
+            if (fileInput) {
+                fileInput.addEventListener('change', updateFileDisplay);
+            }
+            
+            if (removeButton) {
+                removeButton.addEventListener('click', removeFile);
+            }
+            
+            if (importButton) {
+                importButton.addEventListener('click', convertWordToPDF);
+            }
+            
+            if (previewButton) {
+                previewButton.addEventListener('click', previewFile);
+            }
+        });
+    </script>
+</body>
+</html>

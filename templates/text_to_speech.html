@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Text to Speech - TARS DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --tool-radius: 20px;
+      --card-shadow: 0 4px 24px 0 rgba(40, 25, 67, 0.14);
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --btn-accent: #A259FF;
+      --btn-black: #000000;
+      --btn-accent-hover: #c193ff;
+      --btn-black-hover: #352348;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* --- NAV BAR / FOOTER STYLES --- */
+    nav {
+      background: var(--navbar-bg);
+      height: 72px;
+      display: flex;
+      align-items: center;
+      padding: 0 48px;
+      box-sizing: border-box;
+      z-index: 1000;
+    }
+    .brand-logo {
+      display: flex; align-items: center; height: 100%; margin-right: 21px; margin-top: 2px;
+    }
+    .brand-logo img {
+      height: 62px; width: 138px; object-fit: contain; border-radius: 10px; background: transparent;
+      user-select: none; -webkit-user-drag: none;
+    }
+    .nav-links { margin-left: auto; display: flex; align-items: center; gap: 1.7rem;}
+    .nav-links a, .dropdown-toggle {
+      color: var(--white); font-weight: 600; text-decoration: none; font-size: 1.13rem;
+      padding: 10px 18px 8px 18px; border-radius: 8px;
+      background: none; border: none; outline: none; opacity: 0.93; transition: background 0.19s, color 0.18s, box-shadow 0.19s;
+    }
+    .nav-links a.active, .nav-links a:hover, .dropdown-toggle:focus, .dropdown-toggle:hover { opacity: 1; color: var(--white);}
+    .logout-link { color: #ff4e54; font-weight: 600; border: 1.5px solid #ff4e54; background: none; border-radius: 8px; padding: 8px 18px; margin-left: 22px;}
+    .logout-link:hover { background: #28102b; color: #fff;}
+    .dropdown { position: relative; display: inline-block;}
+    .dropdown-toggle::after { content: '▼'; margin-left: 7px; font-size: 0.83em; color: var(--white);}
+    .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after { transform: rotate(180deg);}
+    .dropdown-content { display: none; position: absolute; top: 58px; left: 0; background: #fff; box-shadow: 0 14px 42px 0 rgba(40,25,67,0.22), 0 2px 12px 0 rgba(40,25,67,0.12); border-radius: 17px; z-index: 9999; padding: 15px 26px 11px 17px; min-width: 410px; max-width: 540px; grid-template-columns: repeat(2,1fr); gap: 9px 11px;}
+    .dropdown:focus-within .dropdown-content, .dropdown:hover .dropdown-content{ display: grid; opacity: 1; visibility: visible; pointer-events: all;}
+    .dropdown-content a { color: #14131c; font-weight: 600; background: #fff; padding: 11px 20px 9px 13px; border-radius: 10px; font-size: 1rem; transition: background 0.13s, color 0.11s, box-shadow 0.19s; text-align: left;}
+    .dropdown-content a:hover, .dropdown-content a:focus { background: #dedcff; color: #21003b;}
+    @media (max-width: 950px) { nav { padding: 0 13px;} .brand-logo img {height:48px;width:98px;} .nav-links{gap:1rem;} .dropdown-content{min-width:240px; padding:11px 6px 8px 7px;}}
+    @media (max-width: 680px) { nav {flex-direction:column;height:auto; padding:0 0 7px 0;} .brand-logo{margin:5px 0 4px 0;} .nav-links{width: 100%; gap: 7px; justify-content: flex-start;}}
+
+    /* --- MAIN CARD & CONTAINER --- */
+    .tts-outer {
+      min-height: calc(100vh - 110px);
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1 0 auto;
+    }
+    .tts-card {
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      max-width: 950px;
+      width: 90%;
+      min-width: 340px;
+      padding: 48px 56px 48px 42px;
+      margin: 46px auto 40px auto;
+      position: relative;
+      gap: 48px;
+      box-sizing: border-box;
+    }
+    .tts-formside {
+      flex: 1 1 420px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
+    }
+    .tts-heading {
+      font-size: 2.24rem;
+      font-weight: 700;
+      color: #1A0326;
+      margin-bottom: 14px;
+      letter-spacing: 0.01em;
+    }
+    .tts-textarea {
+      width: 100%;
+      border-radius: 14px;
+      border: 1.7px solid #e7e6f7;
+      background: #F9F8FC;
+      color: #35004A;
+      font-size: 1.13rem;
+      min-height: 142px;
+      max-height: 350px;
+      resize: vertical;
+      padding: 18px 19px;
+      outline: none;
+      margin-bottom: 34px;
+      font-family: 'Inter', Arial, sans-serif;
+      transition: border 0.15s, box-shadow 0.13s;
+      box-shadow: 0 2px 14px 0 rgba(110,36,255,0.04);
+    }
+    .tts-textarea:focus { border-color: #B188FF; }
+    .tts-actions-row {
+      display: flex;
+      gap: 15px;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    .tts-btn {
+      border: none;
+      border-radius: 9px;
+      outline: none;
+      font-size: 1.1rem;
+      font-family: 'Inter', Arial, sans-serif;
+      font-weight: 600;
+      padding: 13px 26px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.11s, box-shadow 0.13s;
+      margin: 0;
+      box-shadow: 0 2px 11px 0 rgba(162,89,255,0.09);
+      letter-spacing: 0.01em;
+    }
+    .tts-btn.generate {
+      background: var(--accent);
+      color: #fff;
+    }
+    .tts-btn.generate:hover { background: var(--btn-accent-hover);}
+    .tts-btn.preview {
+      background: var(--btn-black);
+      color: #fff;
+    }
+    .tts-btn.preview:hover { background: var(--btn-black-hover);}
+    #statusMessage {
+      margin-top: 15px;
+      font-weight: 600;
+      font-size: 1.09rem;
+      min-height: 1.4em;
+      color: #47455A;
+    }
+
+    .tts-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 170px;
+      margin: 0 0 0 0;
+    }
+    .tts-icon img {
+      width: 207px;
+      height: 205px;
+      display: block;
+      border-radius: 23px;
+      background: transparent;
+      box-shadow: none;
+      object-fit: contain;
+    }
+    @media (max-width: 990px) {
+      .tts-card { flex-direction: column; align-items: center; padding: 28px 2vw 29px 2vw; gap: 18px;}
+      .tts-icon { margin: 20px auto 2px auto; }
+      .tts-formside { align-items: center; width: 100%; }
+      .tts-heading, .tts-textarea, .tts-actions-row { text-align: center; }
+    }
+
+    footer {
+      text-align: center;
+      padding: 18px 0 8px 0;
+      background: var(--footer-bg);
+      color: #e0e0e0;
+      font-size: 0.95em;
+      margin-top: auto;
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- ✦ Magnificent NAVIGATION BAR ✦ -->
+  <nav>
+    <div class="brand-logo">
+      <img src="/static/logo.png" alt="DocShift Logo" draggable="false" />
+    </div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/document-screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+    </div>
+  </nav>
+
+  <!-- ===================== MAIN CONTENT ====================== -->
+  <div class="tts-outer">
+    <div class="tts-card">
+      <div class="tts-formside">
+        <div class="tts-heading">Text to Speech Converter</div>
+        <form id="ttsForm" style="width:100%">
+          <textarea id="ttsInput" class="tts-textarea" placeholder="Type or paste your text here..." required></textarea>
+          <div class="tts-actions-row">
+            <button type="button" id="generateBtn" class="tts-btn generate">Generate Audio</button>
+            <button type="button" id="previewBtn" class="tts-btn preview">Preview</button>
+          </div>
+          <div id="statusMessage"></div>
+          <div id="audioContainer" style="display: none; margin-top: 20px;">
+            <audio id="audioPlayer" controls style="width: 100%; margin-bottom: 10px;"></audio>
+            <a id="downloadLink" download="tts_audio.mp3" style="color: #A259FF; text-decoration: none; font-weight: 600;">Download Audio</a>
+          </div>
+        </form>
+      </div>
+      <div class="tts-icon">
+        <img src="/static/Frame6.png" alt="tts icon" />
+      </div>
+    </div>
+  </div>
+  <footer>
+    © 2025 TARS DocShift. All rights reserved.
+  </footer>
+
+  <script>
+    async function generateTTS() {
+      const text = document.getElementById('ttsInput').value.trim();
+      const statusMessage = document.getElementById('statusMessage');
+      const audioContainer = document.getElementById('audioContainer');
+      const audioPlayer = document.getElementById('audioPlayer');
+      const downloadLink = document.getElementById('downloadLink');
+
+      if (!text) {
+        statusMessage.textContent = "Please enter some text.";
+        statusMessage.style.color = "#ff4e54";
+        return;
+      }
+
+      statusMessage.textContent = "⏳ Generating audio... Please wait.";
+      statusMessage.style.color = "#47455A";
+      audioContainer.style.display = "none";
+
+      try {
+        const res = await fetch("/generate_tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+
+        const data = await res.json();
+
+        if (data.audio_url) {
+          audioPlayer.src = data.audio_url;
+          downloadLink.href = data.audio_url;
+          audioContainer.style.display = "block";
+          statusMessage.textContent = "✅ Audio generated successfully!";
+          statusMessage.style.color = "#28a745";
+        } else {
+          statusMessage.textContent = "❌ Something went wrong generating audio.";
+          statusMessage.style.color = "#ff4e54";
+        }
+      } catch (err) {
+        console.error(err);
+        statusMessage.textContent = "❌ Error generating audio.";
+        statusMessage.style.color = "#ff4e54";
+      }
+    }
+
+    async function previewTTS() {
+      const text = document.getElementById('ttsInput').value.trim();
+      const statusMessage = document.getElementById('statusMessage');
+
+      if (!text) {
+        statusMessage.textContent = "Please enter some text to preview.";
+        statusMessage.style.color = "#ff4e54";
+        return;
+      }
+
+      // Use browser's speech synthesis for preview
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.8;
+        utterance.pitch = 1;
+        utterance.volume = 0.8;
+        
+        statusMessage.textContent = "🔊 Playing preview...";
+        statusMessage.style.color = "#47455A";
+        
+        speechSynthesis.speak(utterance);
+        
+        utterance.onend = function() {
+          statusMessage.textContent = "Preview completed.";
+          statusMessage.style.color = "#47455A";
+        };
+      } else {
+        statusMessage.textContent = "Preview not supported in this browser.";
+        statusMessage.style.color = "#ff4e54";
+      }
+    }
+
+    // Add event listeners when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('generateBtn').addEventListener('click', generateTTS);
+      document.getElementById('previewBtn').addEventListener('click', previewTTS);
+    });
+  </script>
+</body>
+</html>

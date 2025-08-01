@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Plagiarism Scanner - TARS DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --btn-black: #000;
+      --btn-accent-hover: #c193ff;
+    }
+    body {
+      margin: 0; padding: 0; min-height: 100vh;
+      background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--white);
+      display: flex; flex-direction: column;
+    }
+    nav { background: var(--navbar-bg); height: 72px; display: flex; align-items: center; padding: 0 48px; box-sizing: border-box; z-index: 1000;}
+    .brand-logo { display: flex; align-items: center; height: 100%; margin-right: 21px; margin-top: 2px;}
+    .brand-logo img { height: 62px; width: 138px; object-fit: contain; border-radius: 10px; user-select: none; background: transparent; }
+    .nav-links { margin-left: auto; display: flex; align-items: center; gap: 1.7rem;}
+    .nav-links a, .dropdown-toggle { color: var(--white); font-weight: 600; text-decoration: none; font-size: 1.13rem; padding: 10px 18px 8px 18px; border-radius: 8px; background: none; border: none; outline: none; opacity: 0.93; transition: background 0.19s, color 0.18s, box-shadow 0.19s;}
+    .nav-links a.active, .nav-links a:hover, .dropdown-toggle:focus, .dropdown-toggle:hover {opacity: 1; color: var(--white);}
+    .logout-link { color: #ff4e54; font-weight: 600; border: 1.5px solid #ff4e54; background: none; border-radius: 8px; padding: 8px 18px; margin-left: 22px;}
+    .logout-link:hover { background: #28102b; color: #fff;}
+    .dropdown { position: relative; display: inline-block;}
+    .dropdown-toggle::after { content: '▼'; margin-left: 7px; font-size: 0.83em; color: var(--white);}
+    .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after { transform: rotate(180deg);}
+    .dropdown-content { display:none; position:absolute; top:58px; left:0; background:#fff; box-shadow:0 14px 42px 0 rgba(40,25,67,0.22),0 2px 12px 0 rgba(40,25,67,0.12); border-radius:17px; z-index:9999; padding:15px 26px 11px 17px; min-width:410px; max-width:540px; grid-template-columns:repeat(2,1fr); gap:9px 11px;}
+    .dropdown:focus-within .dropdown-content, .dropdown:hover .dropdown-content{ display:grid; opacity:1; visibility:visible; pointer-events:all;}
+    .dropdown-content a { color:#14131c; font-weight:600; background:#fff; padding:11px 20px 9px 13px; border-radius:10px; font-size:1rem; transition:background 0.13s, color 0.11s, box-shadow 0.19s; text-align:left;}
+    .dropdown-content a:hover, .dropdown-content a:focus { background:#dedcff; color:#21003b;}
+    @media (max-width:950px){ nav{padding:0 13px;}.brand-logo img{height:48px;width:98px;}.nav-links{gap:1rem;}.dropdown-content{min-width:240px; padding:11px 6px 8px 7px;} }
+    @media (max-width:680px){ nav{flex-direction:column;height:auto; padding:0 0 7px 0;}.brand-logo{margin:5px 0 4px 0;}.nav-links{width:100%; gap:7px;justify-content:flex-start;} }
+    .plag-outer { min-height: calc(100vh - 110px); display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;}
+    .plag-card { background: #fff; border-radius: 22px; box-shadow: 0 4px 40px rgba(40,0,85,0.2); display: flex; flex-direction: column; align-items: center; max-width: 670px; width: 96vw; padding: 42px 40px 38px 40px; margin: 54px auto 38px auto;}
+    .plag-card h1 { font-size: 2.1rem; font-weight: 700; color: #1A0326; margin: 0 0 16px 0; text-align:center; }
+    .plag-action-row { display: flex; gap: 12px; width: 100%; align-items: center; justify-content: center; margin-bottom: 30px;}
+    .plag-input-area {
+      width: 100%; min-height: 140px; max-height: 250px;
+      border-radius: 13px;
+      border: 1.6px solid #E9E6F7;
+      background: #F8F6FC;
+      color: #330056;
+      font-size: 1.09rem;
+      resize: vertical;
+      padding: 18px 19px;
+      outline: none;
+      margin-bottom: 22px;
+      font-family: 'Inter', Arial, sans-serif;
+      transition: border 0.17s, box-shadow 0.18s;
+      box-shadow: 0 2px 14px 0 rgba(110,36,255,0.03);
+    }
+    .plag-input-area:focus { border-color: #A259FF; }
+    .plag-btn {
+      border: none; border-radius: 9px; font-size: 1.08rem; font-family: 'Inter', Arial, sans-serif; font-weight: 600;
+      padding: 14px 32px; cursor: pointer; margin: 0; box-shadow: 0 2px 12px 0 rgba(162,89,255,0.09); letter-spacing: 0.01em;
+      transition: background 0.12s;
+    }
+    .plag-btn.check { background: var(--accent); color: #fff;}
+    .plag-btn.check:hover { background: var(--btn-accent-hover);}
+    .plag-btn.preview { background: var(--btn-black); color: #fff;}
+    .plag-btn.preview:hover { background: #352348;}
+    .plag-result-box {
+      width: 100%; border-radius: 13px; border: 1.4px solid #E9E6F7; background: #F9F8FC; color: #2a013f;
+      font-size: 1.1rem; padding: 18px 19px; margin: 0 0 12px 0; min-height: 80px; max-height: 220px; overflow-y: auto;
+      font-family: 'Inter', Arial, sans-serif; font-weight: 500;
+    }
+    .plag-card .checking-message {
+      text-align: left; margin-top: 9px; margin-bottom: 7px; font-size: 1.06em; color: #9c59ff; font-weight: 600;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .result-item {
+      margin-bottom: 15px; padding: 12px 15px; background: #F0F8FF; border-left: 4px solid #A259FF; border-radius: 8px;
+    }
+    .result-item .snippet {
+      margin: 0 0 8px 0; color: #2a013f; font-size: 1rem;
+    }
+    .result-item .similarity {
+      margin: 0; color: #6B46C1; font-size: 0.95rem; font-weight: 600;
+    }
+    .error {
+      color: #DC3545; font-weight: 600; text-align: center; padding: 15px; background: #FFE6E6; border-radius: 8px;
+    }
+    @media (max-width:650px) { .plag-card{padding:16px 2vw;}}
+    footer {text-align: center; padding: 18px 0 8px 0; background: var(--footer-bg); color: #e0e0e0; font-size: 0.95em; margin-top: auto; box-shadow: none;}
+  </style>
+</head>
+<body>
+  <!-- ✦ Magnificent NAVIGATION BAR ✦ -->
+  <nav>
+    <div class="brand-logo">
+      <img src="/static/logo.png" alt="DocShift Logo" draggable="false"/>
+    </div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/document-screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+    </div>
+  </nav>
+  <!-- ===== Main Plagiarism Container ===== -->
+  <div class="plag-outer">
+    <div class="plag-card">
+      <h1>Plagiarism Scanner</h1>
+      <form id="plagForm" style="width:100%">
+        <textarea class="plag-input-area" id="inputText" name="text" placeholder="Paste your text here to check for plagiarism..." required></textarea>
+        <div class="plag-action-row">
+          <button type="button" id="checkBtn" class="plag-btn check">🔍 Check Plagiarism</button>
+          <button type="button" id="previewBtn" class="plag-btn preview">👁️ Preview Text</button>
+        </div>
+      </form>
+      <div id="statusMessage" style="margin-bottom: 15px; font-weight: 600; text-align: center;"></div>
+      <div id="checkingMessage" class="checking-message" style="display:none;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+          <div style="width: 20px; height: 20px; border: 2px solid #A259FF; border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          <span>Checking for plagiarism...</span>
+        </div>
+      </div>
+      <div id="plagResult" class="plag-result-box" style="display:none;">
+        <!-- Results will be rendered here -->
+      </div>
+    </div>
+  </div>
+  <footer>
+    © 2025 TARS DocShift. All rights reserved.
+  </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkBtn = document.getElementById('checkBtn');
+            const previewBtn = document.getElementById('previewBtn');
+            const inputText = document.getElementById('inputText');
+            const statusMessage = document.getElementById('statusMessage');
+            const checkingMessage = document.getElementById('checkingMessage');
+            const plagResult = document.getElementById('plagResult');
+
+            // Add event listeners
+            checkBtn.addEventListener('click', checkPlagiarism);
+            previewBtn.addEventListener('click', previewText);
+
+            function setStatus(message, isError = false) {
+                statusMessage.textContent = message;
+                statusMessage.style.color = isError ? '#DC3545' : '#28A745';
+                statusMessage.style.display = message ? 'block' : 'none';
+            }
+
+            function previewText() {
+                const text = inputText.value.trim();
+                if (!text) {
+                    setStatus('Please enter some text first.', true);
+                    return;
+                }
+
+                const wordCount = text.split(/\s+/).length;
+                const charCount = text.length;
+                
+                setStatus(`📊 Text Preview: ${wordCount} words, ${charCount} characters`);
+                
+                // Show a preview in the result box
+                plagResult.innerHTML = `
+                    <div style="background: #E8F4FD; padding: 15px; border-radius: 8px; border-left: 4px solid #2196F3;">
+                        <h4 style="margin: 0 0 10px 0; color: #1565C0;">📄 Text Preview</h4>
+                        <p style="margin: 0 0 10px 0; color: #333;"><strong>Length:</strong> ${charCount} characters</p>
+                        <p style="margin: 0 0 10px 0; color: #333;"><strong>Words:</strong> ${wordCount} words</p>
+                        <p style="margin: 0; color: #666; font-style: italic;">Ready for plagiarism check!</p>
+                    </div>
+                `;
+                plagResult.style.display = 'block';
+            }
+
+            async function checkPlagiarism() {
+                const text = inputText.value.trim();
+
+                if (!text) {
+                    setStatus('Please enter some text to check for plagiarism.', true);
+                    return;
+                }
+
+                if (text.length < 20) {
+                    setStatus('Text too short. Please enter at least 20 characters.', true);
+                    plagResult.innerHTML = '<div class="error">Text too short to check for plagiarism. Please enter at least 20 characters.</div>';
+                    plagResult.style.display = 'block';
+                    return;
+                }
+
+                // Show loading state
+                checkBtn.disabled = true;
+                checkBtn.textContent = '🔄 Checking...';
+                setStatus('');
+                checkingMessage.style.display = 'block';
+                plagResult.style.display = 'none';
+
+                try {
+                    const formData = new FormData();
+                    formData.append('text', text);
+
+                    const response = await fetch('/check_plagiarism', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    // Hide loading state
+                    checkingMessage.style.display = 'none';
+                    checkBtn.disabled = false;
+                    checkBtn.textContent = '🔍 Check Plagiarism';
+
+                    if (data.error) {
+                        setStatus(data.error, true);
+                        plagResult.innerHTML = `<div class="error">${data.error}</div>`;
+                        plagResult.style.display = 'block';
+                        return;
+                    }
+
+                    if (data.results && data.results.length > 0) {
+                        let html = '<h4 style="margin: 0 0 15px 0; color: #2a013f;">🔍 Plagiarism Check Results</h4>';
+                        let foundMatches = false;
+
+                        data.results.forEach(item => {
+                            if (item.snippet && item.snippet.trim()) {
+                                foundMatches = true;
+                                html += `
+                                    <div class="result-item">
+                                        <p class="snippet"><strong>📝 Found Content:</strong> ${item.snippet}</p>
+                                        <p class="similarity"><strong>🎯 Similarity Analysis:</strong> ${item.similarity}</p>
+                                    </div>
+                                `;
+                            } else if (item.similarity) {
+                                html += `<div class="error">${item.similarity}</div>`;
+                            }
+                        });
+
+                        if (!foundMatches) {
+                            html += `
+                                <div style="background: #E8F5E8; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50; text-align: center;">
+                                    <p style="margin: 0; color: #2E7D32; font-weight: 600;">✅ No significant plagiarism detected!</p>
+                                    <p style="margin: 5px 0 0 0; color: #388E3C; font-size: 0.9em;">Your text appears to be original.</p>
+                                </div>
+                            `;
+                        }
+
+                        plagResult.innerHTML = html;
+                        plagResult.style.display = 'block';
+                        setStatus(foundMatches ? 'Plagiarism check completed - matches found!' : 'Plagiarism check completed - no matches found!');
+                    } else {
+                        plagResult.innerHTML = `
+                            <div style="background: #E8F5E8; padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50; text-align: center;">
+                                <p style="margin: 0; color: #2E7D32; font-weight: 600;">✅ No plagiarism detected!</p>
+                                <p style="margin: 5px 0 0 0; color: #388E3C; font-size: 0.9em;">Your text appears to be original.</p>
+                            </div>
+                        `;
+                        plagResult.style.display = 'block';
+                        setStatus('Plagiarism check completed successfully!');
+                    }
+
+                } catch (error) {
+                    checkingMessage.style.display = 'none';
+                    checkBtn.disabled = false;
+                    checkBtn.textContent = '🔍 Check Plagiarism';
+                    setStatus('Error occurred while checking plagiarism. Please try again.', true);
+                    plagResult.innerHTML = '<div class="error">❌ Connection error. Please check your internet connection and try again.</div>';
+                    plagResult.style.display = 'block';
+                    console.error('Error:', error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

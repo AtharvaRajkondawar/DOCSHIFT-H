@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Merge PDFs - TARS DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent; /* make navbar background transparent to blend */
+      --footer-bg: transparent; /* make footer background transparent to blend */
+      --tool-gradient: linear-gradient(-53deg, #31004A, #14033D);
+      --tool-radius: 20px;
+      --card-shadow: 0 4px 24px 0 rgba(40, 25, 67, 0.14);
+      --tool-shadow-hover: 0 8px 38px 0 rgba(40, 25, 67, 0.34);
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --dropdown-bg: #fff;
+      --dropdown-link-hover: #dedcff;
+      --dropdown-link-color: #21003b;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ---------------------- NAVIGATION ---------------------- */
+    nav {
+      background: var(--navbar-bg);
+      height: 72px;
+      display: flex;
+      align-items: center;
+      padding: 0 48px;
+      box-sizing: border-box;
+      /* removed box-shadow for seamless blending */
+      z-index: 1000;
+      position: relative;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      margin-right: 21px;
+      margin-top: 2px;
+    }
+    .brand-logo img {
+      height: 62px;
+      width: 138px;
+      object-fit: contain;
+      border-radius: 10px;
+      user-select: none;
+      -webkit-user-drag: none;
+      transition: box-shadow 0.25s;
+      background: transparent;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 1.7rem;
+      height: 100%;
+      position: relative;
+      z-index: 1001;
+      flex-wrap: nowrap;
+    }
+    .nav-links a,
+    .dropdown-toggle {
+      color: var(--white);
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 1.13rem;
+      padding: 10px 18px 8px 18px;
+      border-radius: 8px;
+      transition: background 0.19s, color 0.18s, box-shadow 0.19s;
+      cursor: pointer;
+      background: none;
+      border: none;
+      outline: none;
+      display: inline-block;
+      white-space: nowrap;
+      user-select: none;
+      opacity: 0.93;
+      box-shadow: none;
+      position: relative;
+      /* Remove background or outline from "Home" or any link */
+      /* No outline or background for all nav links */
+    }
+
+    .nav-links a.active,
+    .nav-links a:hover,
+    .dropdown-toggle:focus,
+    .dropdown-toggle:hover {
+      opacity: 1;
+      color: var(--white);
+    }
+
+    .logout-link {
+      color: #ff4e54;
+      font-weight: 600;
+      border: 1.5px solid #ff4e54;
+      background: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      transition: background 0.17s, color 0.13s;
+      margin-left: 22px;
+    }
+    .logout-link:hover {
+      background: #28102b;
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(186,0,84,0.13);
+    }
+
+    /* Dropdown menu */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .dropdown-toggle::after {
+      content: '▼';
+      margin-left: 7px;
+      font-size: 0.83em;
+      color: var(--white);
+      vertical-align: middle;
+      transition: transform 0.22s;
+      display: inline-block;
+    }
+    .dropdown:focus-within .dropdown-toggle::after,
+    .dropdown:hover .dropdown-toggle::after {
+      transform: rotate(180deg);
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 58px;
+      left: 0;
+      background: var(--dropdown-bg);
+      box-shadow: 0 14px 42px 0 rgba(40,25,67,0.22), 0 2px 12px 0 rgba(40,25,67,0.12);
+      border-radius: 17px;
+      z-index: 9999;
+      padding: 15px 26px 11px 17px;
+      min-width: 410px;
+      max-width: 540px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 9px 11px;
+      transition: opacity 0.28s, visibility 0.28s;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      display: grid;
+    }
+    .dropdown:focus-within .dropdown-content,
+    .dropdown:hover .dropdown-content {
+      display: grid;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: all;
+    }
+    .dropdown-content a {
+      color: #14131c;
+      font-weight: 600;
+      background: #fff;
+      padding: 11px 20px 9px 13px;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: background 0.13s, color 0.11s, box-shadow 0.19s;
+      text-decoration: none;
+      border: none;
+      display: block;
+      letter-spacing: 0.01em;
+      outline: none;
+      box-shadow: none;
+      text-align: left;
+    }
+    .dropdown-content a:hover,
+    .dropdown-content a:focus {
+      background: var(--dropdown-link-hover);
+      color: var(--dropdown-link-color);
+      box-shadow: 0 1.5px 8px 0 #a259ff27;
+    }
+
+    @media (max-width: 950px) {
+      nav { padding: 0 13px; }
+      .brand-logo img { height: 48px; width: 98px; }
+      .nav-links { gap: 1rem; }
+      .dropdown-content { min-width: 240px; padding: 11px 6px 8px 7px; }
+    }
+    @media (max-width: 680px) {
+      nav { flex-direction: column; height: auto; padding: 0 0 7px 0; }
+      .brand-logo { margin: 5px 0 4px 0; }
+      .nav-links { width: 100%; gap: 7px; justify-content: flex-start;}
+    }
+
+    /* ---------------------- REST OF PAGE ---------------------- */
+
+    .merge-pdf-outer {
+      min-height: calc(100vh - 100px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+    }
+    .merge-pdf-card {
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 4px 40px rgba(40, 0, 85, 0.25);
+      display: flex;
+      align-items: center;
+      max-width: 950px;
+      min-width: 375px;
+      width: 90%;
+      padding: 42px 36px 45px 46px;
+      gap: 60px;
+      margin: 50px auto;
+    }
+    .merge-pdf-text {
+      flex: 1 1 370px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 280px;
+    }
+    .merge-pdf-text h1 {
+      font-size: 2.3rem;
+      font-weight: 700;
+      color: #1A0326;
+      margin: 0 0 12px 0;
+    }
+    .merge-pdf-text p {
+      font-size: 1rem;
+      color: #47455A;
+      margin-bottom: 36px;
+      margin-top: 0;
+      max-width: 380px;
+    }
+    .merge-pdf-actions {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 30px;
+      width: 100%;
+    }
+    .custom-file-upload {
+      background-color: #20002C;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 13px 28px;
+      border: none;
+      border-radius: 9px;
+      box-shadow: 0 2px 8px rgba(98, 0, 148, 0.09);
+      cursor: pointer;
+      transition: background 0.18s;
+      letter-spacing: .01em;
+      outline: none;
+      position: relative;
+      display: inline-block;
+    }
+    .custom-file-upload:hover {
+      background: #400457;
+    }
+    input[type="file"] { display: none; }
+    .file-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0 16px 0;
+      font-size: 0.97em;
+      color: #6900ac;
+      min-height: 1.3em;
+    }
+    .remove-btn {
+      background-color: #ff3333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 0.87em;
+      transition: background-color 0.2s;
+    }
+    .remove-btn:hover { background-color: #b6002c; }
+    #mergeButton, #previewButton {
+      padding: 13px 27px;
+      border-radius: 9px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.18s;
+    }
+    #mergeButton {
+      background: #A259FF;
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(162, 89, 255, 0.12);
+    }
+    #mergeButton:disabled {
+      background: #7a42b2;
+      cursor: not-allowed;
+    }
+    #mergeButton:hover:not(:disabled) { background: #c193ff; }
+    #previewButton {
+      background: #000;
+      color: #fff;
+      border: none;
+      box-shadow: 0 2px 8px rgba(44, 0, 85, 0.07);
+    }
+    #previewButton:hover { background: #3a2050; }
+    #statusMessage {
+      margin-top: 22px;
+      font-weight: bold;
+      font-size: 16px;
+      min-height: 1.4em;
+    }
+    .merge-pdf-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 130px;
+      min-height: 130px;
+      margin: 0 5px 0 0;
+    }
+    .merge-pdf-icon img {
+      width: 269px;
+      height: 315px;
+      display: block;
+      border-radius: 17px;
+      background: transparent;
+      box-shadow: none;
+    }
+    @media (max-width: 880px) {
+      .merge-pdf-card { flex-direction: column; gap: 26px; padding: 30px 12px 35px 12px; }
+      .merge-pdf-icon { margin: 28px auto 0 auto; }
+      .merge-pdf-text { align-items: center; text-align: center; }
+      .merge-pdf-text h1, .merge-pdf-text p { text-align: center; }
+    }
+
+    footer {
+      text-align: center;
+      padding: 18px 0 8px 0;
+      background: var(--footer-bg);
+      color: #e0e0e0;
+      font-size: 0.95em;
+      margin-top: auto;
+      /* Remove box shadow or border to blend with body background */
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- ✦ Magnificent NAVIGATION BAR ✦ -->
+  <nav>
+    <div class="brand-logo">
+      <img src="/static/logo.png" alt="DocShift Logo" draggable="false" />
+    </div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/document-screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+    </div>
+  </nav>
+
+  <!-- ===================== MAIN CONTENT ====================== -->
+  <div class="merge-pdf-outer">
+    <div class="merge-pdf-card">
+      <div class="merge-pdf-text">
+        <h1>Merge PDFs</h1>
+        <p>
+          Upload a PDF file, check the total pages, and specify the pages to remove.
+        </p>
+        <form id="mergePdfsForm" enctype="multipart/form-data" style="width:100%">
+          <div class="merge-pdf-actions">
+            <label for="pdfs" class="custom-file-upload">Choose PDFs</label>
+            <input type="file" id="pdfs" name="pdfs" accept=".pdf" multiple>
+            <button type="button" id="mergeButton">Merge PDFs</button>
+            <button type="button" id="previewButton">Preview</button>
+          </div>
+          <div class="file-display" id="fileDisplay" style="display: none;">
+            <span id="fileName"></span>
+            <button type="button" class="remove-btn" id="removeFile">Remove</button>
+          </div>
+        </form>
+        <div id="statusMessage"></div>
+      </div>
+      <div class="merge-pdf-icon">
+        <!-- Use your own SVG or PNG; here is a simple placeholder SVG matching your screenshot -->
+        <img src="/static/Frame.png" alt="merge pdf icon" />
+       
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © 2025 TARS DocShift. All rights reserved.
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      function setStatus(message, isError = false) {
+        const status = document.getElementById('statusMessage');
+        if (!status) return;
+        status.textContent = message;
+        status.style.color = isError ? 'red' : '#28a745';
+      }
+      function updateFileDisplay() {
+        const fileInput = document.getElementById('pdfs');
+        const fileDisplay = document.getElementById('fileDisplay');
+        const fileNameSpan = document.getElementById('fileName');
+        if (!fileInput || !fileDisplay || !fileNameSpan) return;
+        if (fileInput.files.length > 0) {
+          const fileNames = Array.from(fileInput.files).map(file => file.name).join(', ');
+          fileNameSpan.textContent = fileNames;
+          fileDisplay.style.display = 'flex';
+        } else {
+          fileNameSpan.textContent = '';
+          fileDisplay.style.display = 'none';
+        }
+      }
+      function removeFile() {
+        const fileInput = document.getElementById('pdfs');
+        if (!fileInput) return;
+        fileInput.value = '';
+        setStatus('');
+        updateFileDisplay();
+      }
+      async function mergePDFs() {
+        const fileInput = document.getElementById('pdfs');
+        const mergeButton = document.getElementById('mergeButton');
+        if (!fileInput.files.length) {
+          setStatus('Please select at least one PDF.', true);
+          return;
+        }
+        if (fileInput.files.length < 2) {
+          setStatus('Please select at least two PDFs to merge.', true);
+          return;
+        }
+        const form = document.getElementById('mergePdfsForm');
+        const formData = new FormData(form);
+        try {
+          setStatus('Processing...', false);
+          mergeButton.disabled = true;
+          const response = await fetch('/merge/pdfs', {
+            method: 'POST',
+            body: formData
+          });
+          if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Unknown error');
+          }
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'merged.pdf';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setStatus('Merge successful! File downloaded.');
+          removeFile();
+        } catch (err) {
+          setStatus('Merge failed: ' + err.message, true);
+        } finally {
+          mergeButton.disabled = false;
+        }
+      }
+      document.getElementById('pdfs')?.addEventListener('change', updateFileDisplay);
+      document.getElementById('removeFile')?.addEventListener('click', removeFile);
+      document.getElementById('mergeButton')?.addEventListener('click', mergePDFs);
+      // Optionally: add preview button logic here
+    });
+  </script>
+</body>
+</html>

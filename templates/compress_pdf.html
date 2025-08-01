@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Compress PDF - TARS DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --btn-dark: #20002C;
+      --btn-accent: #A259FF;
+      --btn-black: #000;
+      --btn-accent-hover: #c193ff;
+    }
+    body {
+      margin: 0; padding: 0; min-height: 100vh;
+      background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--white);
+      display: flex; flex-direction: column;
+    }
+    nav { background: var(--navbar-bg); height: 72px; display: flex; align-items: center; padding: 0 48px; box-sizing: border-box; z-index: 1000;}
+    .brand-logo { display: flex; align-items: center; height: 100%; margin-right: 21px; margin-top: 2px;}
+    .brand-logo img { height: 62px; width: 138px; object-fit: contain; border-radius: 10px; user-select: none; background: transparent; }
+    .nav-links { margin-left: auto; display: flex; align-items: center; gap: 1.7rem;}
+    .nav-links a, .dropdown-toggle { color: var(--white); font-weight: 600; text-decoration: none; font-size: 1.13rem; padding: 10px 18px 8px 18px; border-radius: 8px; background: none; border: none; outline: none; opacity: 0.93; transition: background 0.19s, color 0.18s, box-shadow 0.19s;}
+    .nav-links a.active, .nav-links a:hover, .dropdown-toggle:focus, .dropdown-toggle:hover {opacity: 1; color: var(--white);}
+    .logout-link { color: #ff4e54; font-weight: 600; border: 1.5px solid #ff4e54; background: none; border-radius: 8px; padding: 8px 18px; margin-left: 22px;}
+    .logout-link:hover { background: #28102b; color: #fff;}
+    .dropdown { position: relative; display: inline-block;}
+    .dropdown .dropdown-toggle::after {
+        content: '▼';
+        margin-left: 5px;
+        transition: transform 0.3s ease;
+        display: inline-block;
+    }
+    .dropdown-content { display:none; position:absolute; top:58px; left:-120px; background:#fff; box-shadow:0 14px 42px 0 rgba(40,25,67,0.22),0 2px 12px 0 rgba(40,25,67,0.12); border-radius:17px; z-index:9999; padding:15px 26px 11px 17px; min-width:410px; max-width:540px; grid-template-columns:repeat(2,1fr); gap:9px 11px; }
+    .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after { transform: rotate(180deg);}
+    .dropdown:focus-within .dropdown-content, .dropdown:hover .dropdown-content{ display:grid; opacity:1; visibility:visible; pointer-events:all;}
+    .dropdown-content a { color:#14131c; font-weight:600; background:#fff; padding:11px 20px 9px 13px; border-radius:10px; font-size:1rem; transition:background 0.13s, color 0.11s, box-shadow 0.19s; text-align:left;}
+    .dropdown-content a:hover, .dropdown-content a:focus { background:#dedcff; color:#21003b;}
+    @media (max-width:950px){ nav{padding:0 13px;}.brand-logo img{height:48px;width:98px;}.nav-links{gap:1rem;}.dropdown-content{min-width:240px; padding:11px 6px 8px 7px;} }
+    @media (max-width:680px){ nav{flex-direction:column;height:auto; padding:0 0 7px 0;}.brand-logo{margin:5px 0 4px 0;}.nav-links{width:100%; gap:7px;justify-content:flex-start;} }
+    /* === CARD/TOOL LAYOUT === */
+    .compresspdf-outer { min-height: calc(100vh - 110px); display:flex; align-items:center; justify-content:center; margin:0; padding:0;}
+    .compresspdf-card { background: #fff; border-radius: 22px; box-shadow: 0 4px 40px rgba(40, 0, 85, 0.25); display: flex; align-items: center; max-width: 950px; min-width: 375px; width: 90%; padding: 42px 36px 45px 46px; gap: 60px; margin: 58px auto 40px auto;}
+    .compresspdf-left { flex: 1 1 410px; display: flex; flex-direction: column; align-items: flex-start; min-width: 300px;}
+    .compresspdf-left h1 { font-size: 2.12rem; font-weight: 700; color: #1A0326; margin: 0 0 16px 0;}
+    .compresspdf-left p { font-size: 1rem; color: #47455A; margin-bottom: 34px; margin-top: 0; max-width: 420px;}
+    .compresspdf-actions { display: flex; gap: 15px; margin-bottom: 26px; width: 100%; flex-wrap: wrap;}
+    .choose-files-btn {
+      background-color: #20002C;
+      color: #fff; font-size: 1.04rem; font-weight: 600; padding: 12px 32px; border: none; border-radius: 9px;
+      box-shadow: 0 2px 8px rgba(98, 0, 148, 0.09); cursor: pointer; outline: none; display: inline-block; transition: background 0.15s;
+    }
+    .choose-files-btn:hover { background: #400457; }
+    .import-pdf-btn {
+      background: var(--btn-accent); color: #fff; font-size: 1.04rem; font-weight: 600; padding: 12px 32px; border-radius: 9px; border: none; box-shadow: 0 2px 9px rgba(162, 89, 255, 0.10); cursor: pointer; transition: background 0.13s;
+    }
+    .import-pdf-btn:hover { background: var(--btn-accent-hover);}
+    .preview-btn {
+      background: #000; color: #fff; font-size: 1.04rem; font-weight: 600; padding: 12px 32px; border-radius: 9px; border: none; box-shadow: 0 2px 8px rgba(44, 0, 85, 0.07); cursor: pointer; transition: background 0.13s;
+    }
+    .preview-btn:hover { background: #475163;}
+
+    input[type="file"] { display: none; }
+    .file-display {
+      display: flex; align-items: center; gap: 10px; margin: 12px 0 13px 0; font-size: 0.99em; color: #6900ac; min-height: 1.3em;
+    }
+    .remove-btn {
+      background-color: #ff3333; color: #fff; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; font-size: 0.87em; transition: background-color 0.2s;
+    }
+    .remove-btn:hover { background-color: #b6002c;}
+    /* Compression Level Dropdown */
+    .compression-dropdown-row {
+      margin-bottom: 9px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .compression-dropdown-label {
+      color: #2a003b;
+      font-weight: 600;
+      font-size: 1.01em;
+      margin-right: 8px;
+    }
+    .compression-dropdown {
+      font-size: 1rem;
+      padding: 12px 17px;
+      border-radius: 7px;
+      border: 1.5px solid #E9E6F7;
+      background: #F8F6FC;
+      color: #400457;
+      font-family: inherit;
+      font-weight: 600;
+      min-width: 170px;
+      outline: none;
+      margin-top: 0;
+      margin-bottom: 0;
+      appearance: none;
+      transition: border 0.14s;
+      box-shadow: 0 1px 7px 0 rgba(160, 120, 255, 0.04);
+    }
+    .compression-dropdown:focus { border-color: #A259FF; }
+    #statusMessage { margin-top: 22px; font-weight: bold; font-size: 1.07em; min-height: 1.4em; color: #47455A;}
+    .compresspdf-icon { display: flex; align-items: center; justify-content: center; min-width: 220px; margin: 0 5px 0 0;}
+    .compresspdf-icon img { width: 220px; height: 215px; display: block; border-radius: 19px; background: transparent; box-shadow: none; object-fit: contain;}
+    @media (max-width: 900px) {
+      .compresspdf-card { flex-direction: column; gap: 25px; padding: 30px 2vw 30px 2vw; }
+      .compresspdf-icon { margin: 28px auto 0 auto;}
+      .compresspdf-left { align-items: center; text-align: center;}
+      .compresspdf-left h1, .compresspdf-left p { text-align: center;}
+      .compresspdf-actions { justify-content: center;}
+      .compression-dropdown-row { justify-content: center;}
+    }
+    footer { text-align: center; padding: 18px 0 8px 0; background: var(--footer-bg); color: #e0e0e0; font-size: 0.95em; margin-top: auto; box-shadow: none;}
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand-logo"><img src="/static/logo.png" alt="DocShift Logo" draggable="false"/></div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/document-screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+    </div>
+  </nav>
+  <div class="compresspdf-outer">
+    <div class="compresspdf-card">
+      <div class="compresspdf-left">
+        <h1>Compress PDF</h1>
+        <p>Reduce file size while optimizing for maximal PDF quality.</p>
+        <form id="compressPdfForm" enctype="multipart/form-data" style="width:100%">
+          <div class="compresspdf-actions">
+            <label for="pdf" class="choose-files-btn">Choose Files</label>
+            <input type="file" id="pdf" name="pdf" accept=".pdf" />
+            <button type="button" id="compressButton" class="import-pdf-btn">Compress PDF</button>
+            <button type="button" id="previewBtn" class="preview-btn">Preview</button>
+          </div>
+          <div class="compression-dropdown-row">
+            <label for="compression_level" class="compression-dropdown-label">Compression Level:</label>
+            <select id="compression_level" name="compression_level" class="compression-dropdown">
+              <option value="low">Low Compression</option>
+              <option value="medium">Medium Compression</option>
+              <option value="high">High Compression</option>
+            </select>
+          </div>
+          <div class="file-display" id="fileDisplay" style="display: none;">
+            <span id="fileName"></span>
+            <button type="button" class="remove-btn" id="removeFile">Remove</button>
+          </div>
+        </form>
+        <div id="statusMessage"></div>
+      </div>
+      <div class="compresspdf-icon">
+        <img src="/static/Frame9.png" alt="compress pdf icon"/>
+      </div>
+    </div>
+  </div>
+  <footer>
+    © 2025 TARS DocShift. All rights reserved.
+  </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            function setStatus(message, isError = false) {
+                const status = document.getElementById('statusMessage');
+                if (!status) return;
+                status.textContent = message;
+                status.style.color = isError ? 'red' : '#28a745';
+            }
+
+            function updateFileDisplay() {
+                const fileInput = document.getElementById('pdf');
+                const fileDisplay = document.getElementById('fileDisplay');
+                const fileNameSpan = document.getElementById('fileName');
+
+                if (!fileInput || !fileDisplay || !fileNameSpan) return;
+
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    fileNameSpan.textContent = file.name;
+                    fileDisplay.style.display = 'flex';
+                } else {
+                    fileNameSpan.textContent = '';
+                    fileDisplay.style.display = 'none';
+                }
+            }
+
+            function removeFile() {
+                const fileInput = document.getElementById('pdf');
+                if (!fileInput) return;
+                fileInput.value = '';
+                setStatus('');
+                updateFileDisplay();
+            }
+
+            function compressPDF() {
+                const fileInput = document.getElementById('pdf');
+                const compressButton = document.getElementById('compressButton');
+                const compressionLevel = document.getElementById('compression_level');
+
+                if (!fileInput.files.length) {
+                    setStatus('Please select a PDF file.', true);
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('pdf', fileInput.files[0]);
+                formData.append('compression_level', compressionLevel.value);
+
+                compressButton.disabled = true;
+                compressButton.textContent = 'Compressing...';
+                setStatus('Compressing PDF...', false);
+
+                fetch('/compress', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { 
+                            throw new Error(text || 'Compression failed.'); 
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Create download link from the provided URL
+                        const a = document.createElement('a');
+                        a.href = data.download_url;
+                        a.download = data.filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        
+                        setStatus(`Compression successful! ${data.message}`);
+                        removeFile();
+                    } else {
+                        throw new Error(data.error || 'Compression failed');
+                    }
+                })
+                .catch(err => {
+                    setStatus('Compression failed: ' + err.message, true);
+                })
+                .finally(() => {
+                    compressButton.disabled = false;
+                    compressButton.textContent = 'Compress PDF';
+                });
+            }
+
+            // Event listeners
+            const fileInput = document.getElementById('pdf');
+            const removeButton = document.getElementById('removeFile');
+            const compressButton = document.getElementById('compressButton');
+
+            if (fileInput) {
+                fileInput.addEventListener('change', updateFileDisplay);
+            }
+
+            if (removeButton) {
+                removeButton.addEventListener('click', removeFile);
+            }
+
+            if (compressButton) {
+                compressButton.addEventListener('click', compressPDF);
+            }
+        });
+    </script>
+</body>
+</html>

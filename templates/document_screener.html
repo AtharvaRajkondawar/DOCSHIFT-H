@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Document Screener - TARS DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --btn-black: #000;
+      --btn-accent-hover: #c193ff;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+    }
+    nav { background: var(--navbar-bg); height: 72px; display: flex; align-items: center; padding: 0 48px; box-sizing: border-box; z-index: 1000;}
+    .brand-logo { display: flex; align-items: center; height: 100%; margin-right: 21px; margin-top: 2px;}
+    .brand-logo img { height: 62px; width: 138px; object-fit: contain; border-radius: 10px; user-select: none; background: transparent; }
+    .nav-links { margin-left: auto; display: flex; align-items: center; gap: 1.7rem;}
+    .nav-links a, .dropdown-toggle { color: var(--white); font-weight: 600; text-decoration: none; font-size: 1.13rem; padding: 10px 18px 8px 18px; border-radius: 8px; background: none; border: none; outline: none; opacity: 0.93; transition: background 0.19s, color 0.18s, box-shadow 0.19s;}
+    .nav-links a.active, .nav-links a:hover, .dropdown-toggle:focus, .dropdown-toggle:hover {opacity: 1; color: var(--white);}
+    .logout-link { color: #ff4e54; font-weight: 600; border: 1.5px solid #ff4e54; background: none; border-radius: 8px; padding: 8px 18px; margin-left: 22px;}
+    .logout-link:hover { background: #28102b; color: #fff;}
+    .dropdown { position: relative; display: inline-block;}
+    .dropdown-toggle::after { content: '▼'; margin-left: 7px; font-size: 0.83em; color: var(--white);}
+    .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after { transform: rotate(180deg);}
+    .dropdown-content { display:none; position:absolute; top:58px; left:0; background:#fff; box-shadow:0 14px 42px 0 rgba(40,25,67,0.22),0 2px 12px 0 rgba(40,25,67,0.12); border-radius:17px; z-index:9999; padding:15px 26px 11px 17px; min-width:410px; max-width:540px; grid-template-columns:repeat(2,1fr); gap:9px 11px; }
+    .dropdown:focus-within .dropdown-content, .dropdown:hover .dropdown-content{ display:grid; opacity:1; visibility:visible; pointer-events:all;}
+    .dropdown-content a { color:#14131c; font-weight:600; background:#fff; padding:11px 20px 9px 13px; border-radius:10px; font-size:1rem; transition:background 0.13s, color 0.11s, box-shadow 0.19s; text-align:left;}
+    .dropdown-content a:hover, .dropdown-content a:focus { background:#dedcff; color:#21003b;}
+    @media (max-width:950px){ nav{padding:0 13px;}.brand-logo img{height:48px;width:98px;}.nav-links{gap:1rem;}.dropdown-content{min-width:240px; padding:11px 6px 8px 7px;} }
+    @media (max-width:680px){ nav{flex-direction:column;height:auto; padding:0 0 7px 0;}.brand-logo{margin:5px 0 4px 0;}.nav-links{width:100%; gap:7px;justify-content:flex-start;} }
+
+    /* CARD + CONTAINER */
+    .docscreen-outer { min-height: calc(100vh - 110px); display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;}
+    .docscreen-card { background: #fff; border-radius: 22px; box-shadow: 0 4px 40px rgba(40,0,85,0.22); display: flex; align-items: stretch; max-width: 1040px; min-width: 320px; width: 96vw; padding: 49px 54px 39px 42px; gap: 67px; margin: 55px auto 38px auto;}
+    .docscreen-formside { flex: 1 1 488px; display: flex; flex-direction: column; align-items: flex-start; min-width: 300px; }
+    .docscreen-formside h1 {
+      font-size: 2.18rem; font-weight: 700; color: #1A0326; margin-bottom: 19px; margin-top:0;
+      letter-spacing: 0.01em;
+    }
+
+    /* --- UPLOAD + PARAGRAPH ROW --- */
+    .docscreen-input-row {
+      width: 100%;
+      display: flex;
+      gap: 11px;
+      margin-bottom: 20px;
+    }
+    .docscreen-upload-label {
+      display: flex; align-items: center; background: #EFEAFB;
+      border-radius: 9px; padding: 10px 21px;
+      color: #39126a; font-size: 1.1rem; font-weight: 600; cursor: pointer; user-select: none; border: none; outline:none;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .docscreen-upload-label:hover {
+      background: #E0D4F7;
+      transform: translateY(-1px);
+    }
+    .docscreen-upload-label input[type="file"] { display: none; }
+    .docscreen-paragraph {
+      flex: 1; min-width: 0;
+      border-radius: 9px;
+      border: 1.35px solid #E9E6F7;
+      background: #F8F6FC;
+      color: #32005D;
+      font-size: 1.06rem;
+      padding: 11px 17px;
+      outline: none;
+      transition: border 0.15s;
+      font-family: 'Inter', Arial, sans-serif;
+    }
+    .docscreen-paragraph:focus { border-color: #A259FF; }
+
+    /* --- BUTTONS ROW --- */
+    .docscreen-btn-row {
+      display: flex; gap: 13px; width: 100%; margin-bottom: 19px;
+    }
+    .docscreen-btn {
+      border: none; border-radius: 11px; font-size: 1.05rem; font-weight: 600; padding: 13px 29px; cursor: pointer; transition: background 0.15s, color 0.12s; margin: 0; box-shadow: 0 2px 13px 0 rgba(162,89,255,0.09); letter-spacing: 0.01em; position: relative;
+    }
+    .btn-analyze { background: var(--accent); color: #fff;}
+    .btn-analyze:hover { background: var(--btn-accent-hover);}
+    .btn-preview { background: var(--btn-black); color: #fff;}
+    .btn-preview:hover { background: #474163;}
+
+    /* --- OUTPUT BOX --- */
+    .docscreen-outputbox {
+      width: 100%; min-height: 120px; max-height: 210px;
+      border-radius: 14px;
+      border: 1.6px solid #E9E6F7;
+      background: #F8F6FC;
+      color: #2a013f;
+      font-size: 1.13rem;
+      padding: 17px 17px;
+      margin-bottom: 39px;
+      outline: none;
+      font-family: 'Inter', Arial, sans-serif;
+      resize: vertical;
+      font-weight: 500;
+    }
+
+    /* --- DOCUMENTS CHAT SECTION --- */
+    .docscreen-chattitle {
+      color: #2a0038; font-weight:700; font-size:1.10rem; margin-bottom: 4px;
+    }
+    .docscreen-chatrow {
+      width: 100%; margin-bottom: 13px; display: flex; gap: 8px;
+    }
+    .docscreen-chatinput {
+      flex: 1;
+      border-radius: 9px;
+      border: 1.3px solid #E9E6F7;
+      background: #F8F6FC;
+      color: #3D016B;
+      font-size: 1.09rem;
+      padding: 11px 15px; outline: none;
+      transition: border 0.13s;
+      font-family: 'Inter', Arial, sans-serif;
+    }
+    .docscreen-chatinput:focus { border-color: #A259FF;}
+    .docscreen-chatbtn-row { display: flex; gap: 15px; width: 100%; }
+    .docscreen-btn.send { background: var(--accent);}
+    .docscreen-btn.send:hover { background: var(--btn-accent-hover);}
+    .docscreen-btn.preview2 { background: var(--btn-black); color:#fff;}
+    .docscreen-btn.preview2:hover { background: #4e4268;}
+
+    /* --- ICON --- */
+    .docscreen-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 246px;
+    }
+    .docscreen-icon img {
+      width: 266px; height: 253px; display: block; border-radius: 19px; background: transparent; box-shadow: none; object-fit: contain;
+    }
+    @media (max-width: 1000px) {.docscreen-card{flex-direction:column;gap:36px;padding:30px 8vw 26px 8vw;}}
+    @media (max-width:650px) {
+      .docscreen-formside{align-items:center;}
+      .docscreen-input-row, .docscreen-btn-row, .docscreen-chatbtn-row {flex-direction:column;gap:10px;}
+      .docscreen-card{padding:14px 2vw;}
+    }
+    footer { text-align: center; padding: 18px 0 8px 0; background: var(--footer-bg); color: #e0e0e0; font-size: 0.95em; margin-top: auto; box-shadow: none;}
+  </style>
+</head>
+<body>
+  <!-- ✦ Magnificent NAVIGATION BAR ✦ -->
+  <nav>
+    <div class="brand-logo"><img src="/static/logo.png" alt="DocShift Logo" draggable="false"/></div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/document-screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+    </div>
+  </nav>
+
+  <!-- Main Card Container -->
+  <div class="docscreen-outer">
+    <div class="docscreen-card">
+      <div class="docscreen-formside">
+        <h1>Documents screener</h1>
+        <form id="docScreenerForm" enctype="multipart/form-data" style="width:100%">
+          <div class="docscreen-input-row">
+            <label for="docFile" class="docscreen-upload-label">📁 Browse Files
+              <input type="file" id="docFile" name="docFile" accept=".pdf,.docx,.txt"/>
+            </label>
+            <select id="formatSelect" class="docscreen-paragraph" style="flex: none; width: 140px;">
+              <option value="paragraph">Paragraph</option>
+              <option value="bullets">Bullet Points</option>
+            </select>
+          </div>
+          
+          <!-- File display area -->
+          <div id="fileDisplay" style="display: none; margin-bottom: 15px; padding: 12px 15px; background: #E8F4FD; border: 1px solid #B3D7F0; border-radius: 8px; color: #1B4B66;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 1.1em;">📄</span>
+              <div>
+                <div id="fileName" style="font-weight: 600; margin-bottom: 2px;"></div>
+                <div id="fileInfo" style="font-size: 0.9em; opacity: 0.8;"></div>
+              </div>
+              <button type="button" id="removeFile" style="margin-left: auto; background: #DC3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.8em;">✕ Remove</button>
+            </div>
+          </div>
+          
+          <div class="docscreen-btn-row">
+            <button type="button" id="analyzeBtn" class="docscreen-btn btn-analyze">Analyze Document</button>
+            <button type="button" id="previewBtn" class="docscreen-btn btn-preview">Preview</button>
+          </div>
+          <div id="status" style="margin-bottom: 10px; color: #A259FF; font-weight: 500;"></div>
+          <textarea id="analysisOutput" class="docscreen-outputbox" placeholder="Analysis results will appear here..."></textarea>
+        </form>
+        <div class="docscreen-chattitle">Chat about Documents</div>
+        <div id="chatMessages" style="max-height: 200px; overflow-y: auto; background: #F8F6FC; border: 1.3px solid #E9E6F7; border-radius: 9px; padding: 15px; margin-bottom: 13px; min-height: 80px;">
+          <div style="color: #666; font-style: italic;">Upload and analyze a document first, then start chatting about it...</div>
+        </div>
+        <form id="chatForm" style="width:100%">
+          <div class="docscreen-chatrow">
+            <input type="text" id="chatInput" class="docscreen-chatinput" placeholder="Ask about the documents (e.g. who is mentioned?)"/>
+          </div>
+          <div class="docscreen-chatbtn-row">
+            <button type="button" id="sendDocumentsBtn" class="docscreen-btn send">Send Message</button>
+            <button type="button" id="preview2Btn" class="docscreen-btn preview2">Clear Chat</button>
+          </div>
+        </form>
+      </div>
+      <div class="docscreen-icon">
+        <img src="/static/Frame11.png" alt="documents screener icon"/>
+      </div>
+    </div>
+  </div>
+  <footer>
+    © 2025 TARS DocShift. All rights reserved.
+  </footer>
+
+    <script>
+        // Add event listeners when document loads
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('analyzeBtn').addEventListener('click', analyzeDocument);
+            document.getElementById('previewBtn').addEventListener('click', previewFile);
+            document.getElementById('sendDocumentsBtn').addEventListener('click', sendChatMessage);
+            document.getElementById('preview2Btn').addEventListener('click', clearChat);
+            document.getElementById('docFile').addEventListener('change', displaySelectedFile);
+            document.getElementById('removeFile').addEventListener('click', removeSelectedFile);
+            
+            // Allow enter key to send chat messages
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+        });
+
+        function displaySelectedFile() {
+            const fileInput = document.getElementById('docFile');
+            const fileDisplay = document.getElementById('fileDisplay');
+            const fileName = document.getElementById('fileName');
+            const fileInfo = document.getElementById('fileInfo');
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // Convert to MB
+                const fileType = file.type || 'Unknown type';
+                
+                fileName.textContent = file.name;
+                fileInfo.textContent = `${fileSize} MB • ${fileType}`;
+                fileDisplay.style.display = 'block';
+                
+                // Clear previous analysis
+                document.getElementById('analysisOutput').value = '';
+                document.getElementById('status').textContent = '';
+            } else {
+                fileDisplay.style.display = 'none';
+            }
+        }
+
+        function removeSelectedFile() {
+            const fileInput = document.getElementById('docFile');
+            const fileDisplay = document.getElementById('fileDisplay');
+            
+            fileInput.value = '';
+            fileDisplay.style.display = 'none';
+            
+            // Clear analysis and status
+            document.getElementById('analysisOutput').value = '';
+            document.getElementById('status').textContent = '';
+            
+            // Reset chat
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '<div style="color: #666; font-style: italic;">Upload and analyze a document first, then start chatting about it...</div>';
+        }
+
+        function previewFile() {
+            const fileInput = document.getElementById('docFile');
+            const status = document.getElementById('status');
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                status.innerHTML = `📄 Ready to analyze: <strong>${file.name}</strong> (${fileSize} MB)`;
+                status.style.color = '#28A745';
+            } else {
+                status.innerHTML = '⚠️ <strong>No file selected</strong>';
+                status.style.color = '#DC3545';
+            }
+        }
+
+        async function analyzeDocument() {
+            const fileInput = document.getElementById('docFile');
+            const formatSelect = document.getElementById('formatSelect');
+            const status = document.getElementById('status');
+            const analysisOutput = document.getElementById('analysisOutput');
+
+            if (fileInput.files.length === 0) {
+                alert('Please select a document first.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('docFile', fileInput.files[0]);
+            formData.append('format', formatSelect.value);
+
+            try {
+                status.innerHTML = "⏳ <strong>Analyzing document...</strong>";
+                status.style.color = '#FF6B35';
+                analysisOutput.value = "";
+                
+                // Clear chat when new document is analyzed
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = '<div style="color: #666; font-style: italic;">Document analyzed! You can now chat about it...</div>';
+
+                const response = await fetch('/analyze_document', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.analysis) {
+                    analysisOutput.value = result.analysis;
+                    status.innerHTML = "✅ <strong>Analysis complete!</strong>";
+                    status.style.color = '#28A745';
+                } else {
+                    analysisOutput.value = `❌ Error: ${result.error || 'Unknown error occurred.'}`;
+                    status.innerHTML = "❌ <strong>Analysis failed</strong>";
+                    status.style.color = '#DC3545';
+                }
+            } catch (err) {
+                analysisOutput.value = '❌ Error connecting to server. Please try again.';
+                status.innerHTML = "❌ <strong>Connection error</strong>";
+                status.style.color = '#DC3545';
+                console.error('Analysis error:', err);
+            }
+        }
+
+        async function sendChatMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const chatMessages = document.getElementById('chatMessages');
+            const message = chatInput.value.trim();
+
+            if (!message) {
+                alert('Please enter a message.');
+                return;
+            }
+
+            // Clear placeholder text if it exists
+            if (chatMessages.innerHTML.includes('Upload and analyze') || chatMessages.innerHTML.includes('Document analyzed')) {
+                chatMessages.innerHTML = '';
+            }
+
+            // Add user message
+            const userMessage = document.createElement('div');
+            userMessage.style.cssText = 'margin-bottom: 10px; padding: 8px 12px; background: #E8E2F7; border-radius: 8px; border-left: 3px solid #A259FF;';
+            userMessage.innerHTML = `<strong>You:</strong> ${message}`;
+            chatMessages.appendChild(userMessage);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            chatInput.value = '';
+
+            // Add loading message
+            const loadingMessage = document.createElement('div');
+            loadingMessage.id = 'loading-msg';
+            loadingMessage.style.cssText = 'margin-bottom: 10px; padding: 8px 12px; background: #F0F0F0; border-radius: 8px; color: #666; font-style: italic;';
+            loadingMessage.innerHTML = '⏳ Thinking...';
+            chatMessages.appendChild(loadingMessage);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const result = await response.json();
+
+                // Remove loading message
+                const loadingMsg = document.getElementById('loading-msg');
+                if (loadingMsg) loadingMsg.remove();
+
+                // Add bot response
+                const botMessage = document.createElement('div');
+                botMessage.style.cssText = 'margin-bottom: 10px; padding: 8px 12px; background: #F8F6FC; border-radius: 8px; border-left: 3px solid #32005D;';
+                
+                if (result.response) {
+                    botMessage.innerHTML = `<strong>AI Assistant:</strong> ${result.response}`;
+                } else {
+                    botMessage.innerHTML = `<strong>Error:</strong> ${result.error || 'Unable to process your request.'}`;
+                    botMessage.style.borderLeftColor = '#DC3545';
+                    botMessage.style.background = '#FFE6E6';
+                }
+                
+                chatMessages.appendChild(botMessage);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+            } catch (err) {
+                // Remove loading message
+                const loadingMsg = document.getElementById('loading-msg');
+                if (loadingMsg) loadingMsg.remove();
+                
+                const errorMessage = document.createElement('div');
+                errorMessage.style.cssText = 'margin-bottom: 10px; padding: 8px 12px; background: #FFE6E6; border-radius: 8px; border-left: 3px solid #DC3545;';
+                errorMessage.innerHTML = '<strong>Error:</strong> Failed to send message. Please try again.';
+                chatMessages.appendChild(errorMessage);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                console.error('Chat error:', err);
+            }
+        }
+
+        function clearChat() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '<div style="color: #666; font-style: italic;">Chat cleared. Continue asking questions about your document...</div>';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Split PDF - TARS DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --tool-gradient: linear-gradient(-53deg, #31004A, #14033D);
+      --tool-radius: 20px;
+      --card-shadow: 0 4px 24px 0 rgba(40, 25, 67, 0.14);
+      --tool-shadow-hover: 0 8px 38px 0 rgba(40, 25, 67, 0.34);
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --dropdown-bg: #fff;
+      --dropdown-link-hover: #dedcff;
+      --dropdown-link-color: #21003b;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ---------------------- NAVIGATION ---------------------- */
+    nav {
+      background: var(--navbar-bg);
+      height: 72px;
+      display: flex;
+      align-items: center;
+      padding: 0 48px;
+      box-sizing: border-box;
+      z-index: 1000;
+      position: relative;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      margin-right: 21px;
+      margin-top: 2px;
+    }
+    .brand-logo img {
+      height: 62px;
+      width: 138px;
+      object-fit: contain;
+      border-radius: 10px;
+      user-select: none;
+      -webkit-user-drag: none;
+      transition: box-shadow 0.25s;
+      background: transparent;
+    }
+
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 1.7rem;
+      height: 100%;
+      position: relative;
+      z-index: 1001;
+      flex-wrap: nowrap;
+    }
+    .nav-links a,
+    .dropdown-toggle {
+      color: var(--white);
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 1.13rem;
+      padding: 10px 18px 8px 18px;
+      border-radius: 8px;
+      transition: background 0.19s, color 0.18s, box-shadow 0.19s;
+      cursor: pointer;
+      background: none;
+      border: none;
+      outline: none;
+      display: inline-block;
+      white-space: nowrap;
+      user-select: none;
+      opacity: 0.93;
+      box-shadow: none;
+      position: relative;
+    }
+    .nav-links a.active,
+    .nav-links a:hover,
+    .dropdown-toggle:focus,
+    .dropdown-toggle:hover {
+      opacity: 1;
+      color: var(--white);
+    }
+    .logout-link {
+      color: #ff4e54;
+      font-weight: 600;
+      border: 1.5px solid #ff4e54;
+      background: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      transition: background 0.17s, color 0.13s;
+      margin-left: 22px;
+    }
+    .logout-link:hover {
+      background: #28102b;
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(186,0,84,0.13);
+    }
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .dropdown-toggle::after {
+      content: '▼';
+      margin-left: 7px;
+      font-size: 0.83em;
+      color: var(--white);
+      vertical-align: middle;
+      transition: transform 0.22s;
+      display: inline-block;
+    }
+    .dropdown:focus-within .dropdown-toggle::after,
+    .dropdown:hover .dropdown-toggle::after {
+      transform: rotate(180deg);
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 58px;
+      left: 0;
+      background: var(--dropdown-bg);
+      box-shadow: 0 14px 42px 0 rgba(40,25,67,0.22), 0 2px 12px 0 rgba(40,25,67,0.12);
+      border-radius: 17px;
+      z-index: 9999;
+      padding: 15px 26px 11px 17px;
+      min-width: 410px;
+      max-width: 540px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 9px 11px;
+      transition: opacity 0.28s, visibility 0.28s;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      display: grid;
+    }
+    .dropdown:focus-within .dropdown-content,
+    .dropdown:hover .dropdown-content {
+      display: grid;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: all;
+    }
+    .dropdown-content a {
+      color: #14131c;
+      font-weight: 600;
+      background: #fff;
+      padding: 11px 20px 9px 13px;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: background 0.13s, color 0.11s, box-shadow 0.19s;
+      text-decoration: none;
+      border: none;
+      display: block;
+      letter-spacing: 0.01em;
+      outline: none;
+      box-shadow: none;
+      text-align: left;
+    }
+    .dropdown-content a:hover,
+    .dropdown-content a:focus {
+      background: var(--dropdown-link-hover);
+      color: var(--dropdown-link-color);
+      box-shadow: 0 1.5px 8px 0 #a259ff27;
+    }
+
+    @media (max-width: 950px) {
+      nav { padding: 0 13px; }
+      .brand-logo img { height: 48px; width: 98px; }
+      .nav-links { gap: 1rem; }
+      .dropdown-content { min-width: 240px; padding: 11px 6px 8px 7px; }
+    }
+    @media (max-width: 680px) {
+      nav { flex-direction: column; height: auto; padding: 0 0 7px 0; }
+      .brand-logo { margin: 5px 0 4px 0; }
+      .nav-links { width: 100%; gap: 7px; justify-content: flex-start; }
+    }
+
+    /* ---------------------- MAIN CONTENT ---------------------- */
+    .split-pdf-outer {
+      min-height: calc(100vh - 100px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+    }
+    .split-pdf-card {
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 4px 40px rgba(40, 0, 85, 0.25);
+      display: flex;
+      align-items: center;
+      max-width: 950px;
+      min-width: 375px;
+      width: 90%;
+      padding: 42px 36px 45px 46px;
+      gap: 60px;
+      margin: 50px auto;
+    }
+    .split-pdf-text {
+      flex: 1 1 370px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 280px;
+    }
+    .split-pdf-text h1 {
+      font-size: 2.3rem;
+      font-weight: 700;
+      color: #1A0326;
+      margin: 0 0 12px 0;
+    }
+    .split-pdf-text p {
+      font-size: 1rem;
+      color: #47455A;
+      margin-bottom: 36px;
+      margin-top: 0;
+      max-width: 380px;
+    }
+    .split-pdf-actions {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 30px;
+      width: 100%;
+    }
+    .custom-file-upload {
+      background-color: #20002C;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 13px 28px;
+      border: none;
+      border-radius: 9px;
+      box-shadow: 0 2px 8px rgba(98, 0, 148, 0.09);
+      cursor: pointer;
+      transition: background 0.18s;
+      letter-spacing: .01em;
+      outline: none;
+      position: relative;
+      display: inline-block;
+    }
+    .custom-file-upload:hover {
+      background: #400457;
+    }
+    input[type="file"] { display: none; }
+    .file-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0 16px 0;
+      font-size: 0.97em;
+      color: #6900ac;
+      min-height: 1.3em;
+    }
+    .remove-btn {
+      background-color: #ff3333;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 0.87em;
+      transition: background-color 0.2s;
+    }
+    .remove-btn:hover { background-color: #b6002c; }
+    #splitButton {
+      padding: 13px 27px;
+      border-radius: 9px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.18s;
+      background: #A259FF;
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(162, 89, 255, 0.12);
+    }
+    #splitButton:disabled {
+      background: #7a42b2;
+      cursor: not-allowed;
+    }
+    #splitButton:hover:not(:disabled) { background: #c193ff; }
+    #statusMessage {
+      margin-top: 22px;
+      font-weight: bold;
+      font-size: 16px;
+      min-height: 1.4em;
+      color: #47455a;
+    }
+    .split-pdf-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 130px;
+      min-height: 130px;
+      margin: 0 5px 0 0;
+    }
+    .split-pdf-icon img {
+      width: 269px;
+      height: 315px;
+      display: block;
+      border-radius: 17px;
+      background: transparent;
+      box-shadow: none;
+      object-fit: contain;
+    }
+    @media (max-width: 880px) {
+      .split-pdf-card { flex-direction: column; gap: 26px; padding: 30px 12px 35px 12px; }
+      .split-pdf-icon { margin: 28px auto 0 auto; }
+      .split-pdf-text { align-items: center; text-align: center; }
+      .split-pdf-text h1, .split-pdf-text p { text-align: center; }
+    }
+
+    footer {
+      text-align: center;
+      padding: 18px 0 8px 0;
+      background: var(--footer-bg);
+      color: #e0e0e0;
+      font-size: 0.95em;
+      margin-top: auto;
+      box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- ✦ Magnificent NAVIGATION BAR ✦ -->
+  <nav>
+    <div class="brand-logo">
+      <img src="/static/logo.png" alt="DocShift Logo" draggable="false" />
+    </div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/document-screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+    </div>
+  </nav>
+
+  <!-- ===================== MAIN CONTENT ====================== -->
+  <div class="split-pdf-outer">
+    <div class="split-pdf-card">
+      <div class="split-pdf-text">
+        <h1>Split PDF</h1>
+        <p>
+          Upload your PDF and choose how you want to split it. Split by pages or ranges.
+        </p>
+        <form id="splitPdfForm" enctype="multipart/form-data" style="width:100%">
+          <div class="split-pdf-actions">
+            <label for="pdf" class="custom-file-upload">Choose PDF</label>
+            <input type="file" id="pdf" name="pdf" accept=".pdf" />
+            <button type="button" id="splitButton">Split PDF</button>
+          </div>
+          <div class="file-display" id="fileDisplay" style="display: none;">
+            <span id="fileName"></span>
+            <button type="button" class="remove-btn" id="removeFile">Remove</button>
+          </div>
+          <div style="margin: 15px 0;">
+            <label for="split_index" style="color: #47455A; font-weight: 600; display: block; margin-bottom: 8px;">Split at page number:</label>
+            <input type="number" id="split_index" name="split_index" min="1" placeholder="e.g., 5" 
+                   style="padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; width: 200px;" />
+          </div>
+        </form>
+        <div id="error" style="display: none; color: #ff3333; margin: 15px 0; font-weight: bold;"></div>
+        <div id="success" style="display: none; color: #28a745; margin: 15px 0; font-weight: bold;"></div>
+        <div id="download-links" style="margin: 15px 0;"></div>
+        <div id="statusMessage"></div>
+      </div>
+      <div class="split-pdf-icon">
+        <!-- Replace with your real icon: for now a placeholder -->
+        <img src="/static/Frame3.png" alt="split pdf icon" />
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © 2025 TARS DocShift. All rights reserved.
+  </footer>
+    <script>
+        // Define downloadFile function globally so it can be accessed by onclick
+        function downloadFile(url, filename) {
+            // Create a temporary link element for download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            function updateFileDisplay() {
+                const fileInput = document.getElementById('pdf');
+                const fileDisplay = document.getElementById('fileDisplay');
+                const fileNameSpan = document.getElementById('fileName');
+
+                if (!fileInput || !fileDisplay || !fileNameSpan) return;
+
+                if (fileInput.files.length > 0) {
+                    fileNameSpan.textContent = fileInput.files[0].name;
+                    fileDisplay.style.display = 'flex';
+                } else {
+                    fileNameSpan.textContent = '';
+                    fileDisplay.style.display = 'none';
+                }
+            }
+
+            function removeFile() {
+                const fileInput = document.getElementById('pdf');
+                if (!fileInput) return;
+                fileInput.value = '';
+                updateFileDisplay();
+                
+                // Clear any error/success messages
+                const errorDiv = document.getElementById('error');
+                const successDiv = document.getElementById('success');
+                if (errorDiv) {
+                    errorDiv.style.display = 'none';
+                    errorDiv.textContent = '';
+                }
+                if (successDiv) {
+                    successDiv.style.display = 'none';
+                    successDiv.textContent = '';
+                }
+            }
+
+            async function splitPDF() {
+                const pdfInput = document.getElementById('pdf');
+                const splitIndexInput = document.getElementById('split_index');
+                const errorDiv = document.getElementById('error');
+                const successDiv = document.getElementById('success');
+                const downloadLinksDiv = document.getElementById('download-links');
+
+                errorDiv.style.display = 'none';
+                errorDiv.textContent = '';
+                successDiv.style.display = 'none';
+                successDiv.textContent = '';
+                downloadLinksDiv.innerHTML = '';
+
+                if (!pdfInput.files[0] || !splitIndexInput.value) {
+                    errorDiv.textContent = 'Please upload a PDF and specify a split index.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('pdf', pdfInput.files[0]);
+                formData.append('split_index', splitIndexInput.value);
+
+                try {
+                    const response = await fetch('/split', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(errorText);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        successDiv.textContent = result.message || 'PDF split successfully!';
+                        successDiv.style.display = 'block';
+
+                        downloadLinksDiv.innerHTML = `
+                            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                                <button onclick="downloadFile('${result.part1}', '${result.part1_name}')" style="background: #A259FF; color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#c193ff'" onmouseout="this.style.background='#A259FF'">Download Part 1</button>
+                                <button onclick="downloadFile('${result.part2}', '${result.part2_name}')" style="background: #A259FF; color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#c193ff'" onmouseout="this.style.background='#A259FF'">Download Part 2</button>
+                            </div>
+                        `;
+                    } else {
+                        throw new Error(result.error || 'Split failed');
+                    }
+                } catch (error) {
+                    errorDiv.textContent = error.message;
+                    errorDiv.style.display = 'block';
+                }
+            }
+
+            // Event listeners
+            const fileInput = document.getElementById('pdf');
+            const removeButton = document.getElementById('removeFile');
+            const splitButton = document.getElementById('splitButton');
+
+            if (fileInput) {
+                fileInput.addEventListener('change', updateFileDisplay);
+            }
+
+            if (removeButton) {
+                removeButton.addEventListener('click', removeFile);
+            }
+
+            if (splitButton) {
+                splitButton.addEventListener('click', splitPDF);
+            }
+        });
+    </script>
+</body>
+</html>

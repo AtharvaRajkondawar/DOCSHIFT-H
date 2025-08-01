@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI PDF Editor - TARS DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --btn-primary: #A259FF;
+      --btn-black: #000;
+      --btn-primary-hover: #c193ff;
+      --gray: #ECEAF0;
+    }
+    body {
+      margin: 0; padding: 0; min-height: 100vh;
+      background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--white); display: flex; flex-direction: column;
+    }
+    nav { background: var(--navbar-bg); height: 72px; display: flex; align-items: center; padding: 0 48px; box-sizing: border-box; z-index: 1000;}
+    .brand-logo { display: flex; align-items: center; height: 100%; margin-right: 21px; margin-top: 2px;}
+    .brand-logo img { height: 62px; width: 138px; object-fit: contain; border-radius: 10px; user-select: none; background: transparent;}
+    .nav-links { margin-left: auto; display: flex; align-items: center; gap: 1.7rem;}
+    .nav-links a, .dropdown-toggle { color: var(--white); font-weight: 600; text-decoration: none; font-size: 1.13rem; padding: 10px 18px 8px 18px; border-radius: 8px; background: none; border: none; outline: none; opacity: 0.93; transition: background 0.19s, color 0.18s, box-shadow 0.19s;}
+    .nav-links a.active, .nav-links a:hover, .dropdown-toggle:focus, .dropdown-toggle:hover {opacity: 1; color: var(--white);}
+    .logout-link { color: #ff4e54; font-weight: 600; border: 1.5px solid #ff4e54; background: none; border-radius: 8px; padding: 8px 18px; margin-left: 22px;}
+    .logout-link:hover { background: #28102b; color: #fff;}
+    .dropdown { position: relative; display: inline-block;}
+    .dropdown-toggle::after { content: '▼'; margin-left: 7px; font-size: 0.83em; color: var(--white);}
+    .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after { transform: rotate(180deg);}
+    .dropdown-content { display:none; position:absolute; top:58px; left:0; background:#fff; box-shadow:0 14px 42px 0 rgba(40,25,67,0.22),0 2px 12px 0 rgba(40,25,67,0.12); border-radius:17px; z-index:9999; padding:15px 26px 11px 17px; min-width:410px; max-width:540px; grid-template-columns:repeat(2,1fr); gap:9px 11px; }
+    .dropdown:focus-within .dropdown-content, .dropdown:hover .dropdown-content{ display:grid; opacity:1; visibility:visible; pointer-events:all;}
+    .dropdown-content a { color:#14131c; font-weight:600; background:#fff; padding:11px 20px 9px 13px; border-radius:10px; font-size:1rem; transition:background 0.13s, color 0.11s, box-shadow 0.19s; text-align:left;}
+    .dropdown-content a:hover, .dropdown-content a:focus { background:#dedcff; color:#21003b;}
+    @media (max-width:950px){ nav{padding:0 13px;}.brand-logo img{height:48px;width:98px;}.nav-links{gap:1rem;}.dropdown-content{min-width:240px; padding:11px 6px 8px 7px;} }
+    @media (max-width:680px){ nav{flex-direction:column;height:auto; padding:0 0 7px 0;}.brand-logo{margin:5px 0 4px 0;}.nav-links{width:100%; gap:7px;justify-content:flex-start;} }
+
+    /* --- CARD/CONTAINER --- */
+    .ai-pdf-editor-outer {
+      min-height: calc(100vh - 110px);
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1 0 auto;
+    }
+    .ai-pdf-editor-card {
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 4px 48px rgba(40, 0, 85, 0.18);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 46px 38px 36px 38px;
+      max-width: 560px;
+      width: 94vw;
+      margin: 46px auto 40px auto;
+    }
+    .ai-pdf-title {
+      font-size: 2.1rem;
+      font-weight: 700;
+      color: #240046;
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: .01em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+    .ai-pdf-title-icon {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .ai-pdf-subtitle {
+      color: #6D688F;
+      font-size: 1.05rem;
+      margin-bottom: 44px;
+      text-align: center;
+    }
+
+    /* --- Upload Section --- */
+    .ai-file-upload-row {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      gap: 9px;
+      margin-bottom: 12px;
+      justify-content: flex-start;
+      position: relative;
+    }
+    .ai-file-upload-label {
+      display: flex; align-items: center;
+      background: var(--gray);
+      border-radius: 13px;
+      padding: 9px 18px;
+      color: #310064;
+      font-size: 1.09rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: none;
+      border: none;
+      transition: background 0.13s, color 0.13s, transform 0.1s;
+      user-select: none;
+      margin-right: 0;
+    }
+    .ai-file-upload-label:hover {
+      background: #E0D4F7;
+      transform: translateY(-1px);
+    }
+    .ai-file-upload-label img {
+      width: 29px; height: 34px; margin-right: 13px; user-select: none; -webkit-user-drag: none;
+    }
+    .ai-file-upload-label input[type="file"] { display: none; }
+    .ai-file-name {
+      color: #8235c2; margin-left: 10px; font-size: 1.01rem;
+      font-weight: 500;
+      max-width: 200px;
+      overflow-x: auto;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      background: #f7f4ff;
+      padding: 4px 9px 4px 9px;
+      border-radius: 8px;
+      border: 1px solid #ECEAF0;
+      display: inline-block;
+    }
+
+    /* --- Action Buttons --- */
+    .ai-btn-row {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 23px;
+      width: 100%;
+    }
+    .ai-btn-purple {
+      flex: 1 1 200px;
+      background: var(--accent);
+      color: #fff; border: none;
+      border-radius: 9px;
+      font-size: 1.11rem;
+      font-weight: 600;
+      padding: 13px 8px;
+      cursor: pointer;
+      transition: background 0.16s;
+      box-shadow: 0 2px 10px 0 rgba(162, 89, 255, 0.10);
+      outline: none;
+    }
+    .ai-btn-purple:hover { background: var(--btn-primary-hover);}
+    .ai-btn-black {
+      background: var(--btn-black); color: #fff; border: none; border-radius: 9px;
+      font-size: 1.11rem; font-weight: 600; padding: 13px 17px; cursor: pointer; transition: background 0.15s;
+    }
+    .ai-btn-black:hover {background: #332757;}
+    /* --- Manual Editor Section --- */
+    .ai-manual-label {
+      margin-top: 34px;
+      font-weight: 700;
+      color: #22002b;
+      font-size: 1.17rem;
+      margin-bottom: 6px;
+    }
+    .ai-manual-editor {
+      width: 100%;
+      min-height: 130px;
+      max-height: 220px;
+      border-radius: 13px;
+      border: 1.7px solid #eee7fb;
+      background: #FAF7FE;
+      padding: 16px 17px;
+      color: #310046;
+      font-size: 1.07rem;
+      resize: vertical;
+      margin-bottom: 18px;
+      font-family: 'Inter', Arial, sans-serif;
+      transition: border 0.13s;
+      box-shadow: 0 2px 14px rgba(162, 89, 255, 0.04);
+      outline: none;
+    }
+    .ai-manual-editor:focus { border-color: #A259FF; }
+    .ai-download-btn {
+      width: 100%; margin-top: 6px;
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 9px; font-size: 1.13rem; font-weight: 700; padding: 14px 0; cursor: pointer;
+      box-shadow: 0 7px 23px rgba(162, 89, 255, 0.08);
+      transition: background 0.18s;
+    }
+    .ai-download-btn:hover { background: var(--btn-primary-hover);}
+    
+    /* AI Prompt Section */
+    .ai-prompt-section input {
+      font-family: 'Inter', Arial, sans-serif;
+    }
+    .ai-prompt-section input:focus {
+      border-color: #A259FF;
+    }
+    .prompt-preset {
+      background: #F0F8FF;
+      border: 1px solid #B3D7F0;
+      color: #2C5282;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-weight: 500;
+    }
+    .prompt-preset:hover {
+      background: #E6F3FF;
+      border-color: #A259FF;
+      transform: translateY(-1px);
+    }
+    
+    @media (max-width: 650px){
+      .ai-pdf-editor-card { padding: 18px 5vw 22px 5vw;}
+      .ai-file-upload-label img { width: 21px; height: 23px;}
+      .prompt-preset { font-size: 0.8rem; padding: 5px 8px; }
+    }
+    footer {text-align: center; padding: 18px 0 8px 0; background: var(--footer-bg); color: #e0e0e0; font-size: 0.95em; margin-top: auto; box-shadow: none;}
+  </style>
+</head>
+<body>
+  <!-- ✦ Magnificent NAVIGATION BAR ✦ -->
+  <nav>
+    <div class="brand-logo">
+      <img src="/static/logo.png" alt="DocShift Logo" draggable="false" />
+    </div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/document-screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+    </div>
+  </nav>
+
+  <div class="ai-pdf-editor-outer">
+    <div class="ai-pdf-editor-card">
+      <div class="ai-pdf-title">
+        <img src="/static/Frame10.png" alt="AI PDF Editor Icon" class="ai-pdf-title-icon" />
+        AI PDF Editor
+      </div>
+      <div class="ai-pdf-subtitle"></div>
+      <form id="aiPdfEditorForm" enctype="multipart/form-data" style="width:100%">
+        <div class="ai-file-upload-row">
+          <label class="ai-file-upload-label" for="pdfFile">
+            📁 Upload your PDF
+            <input type="file" id="pdfFile" name="pdfFile" accept=".pdf" />
+          </label>
+          <span class="ai-file-name" id="fileName">No file is selected</span>
+        </div>
+        <div class="ai-btn-row">
+          <button type="button" id="analyzeBtn" class="ai-btn-purple">Analyze Document with AI</button>
+          <button type="button" id="previewBtn" class="ai-btn-black">Preview</button>
+        </div>
+        <span class="ai-manual-label">Manual Editor</span>
+        <textarea id="manualEditor" class="ai-manual-editor" placeholder="You can make manual edits here after AI analysis........"></textarea>
+        
+        <!-- AI Prompt Assistant Section -->
+        <div class="ai-prompt-section" style="margin: 20px 0;">
+          <label class="ai-manual-label" style="margin-top: 0;">🤖 AI Assistant</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <input type="text" id="aiPrompt" placeholder="Tell AI what to do (e.g., 'Summarize this', 'Fix grammar', 'Translate to Spanish')" 
+                   style="flex: 1; padding: 10px 15px; border: 1.7px solid #eee7fb; border-radius: 9px; font-size: 1rem; outline: none; transition: border 0.13s;">
+            <button type="button" id="executePromptBtn" class="ai-btn-purple" style="flex: none; padding: 10px 20px; font-size: 1rem;">
+              ✨ Execute
+            </button>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="prompt-preset" data-prompt="Summarize this content in 3 sentences">📝 Summarize</button>
+            <button type="button" class="prompt-preset" data-prompt="Fix grammar and spelling errors">✅ Fix Grammar</button>
+            <button type="button" class="prompt-preset" data-prompt="Make this more professional">💼 Professional</button>
+            <button type="button" class="prompt-preset" data-prompt="Simplify the language">🎯 Simplify</button>
+            <button type="button" class="prompt-preset" data-prompt="Add bullet points and structure">📋 Format</button>
+          </div>
+        </div>
+        
+        <button type="button" id="downloadBtn" class="ai-download-btn">Download Edited PDF</button>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    © 2025 TARS DocShift. All rights reserved.
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('aiPdfEditorForm');
+      const pdfFileInput = document.getElementById('pdfFile');
+      const fileName = document.getElementById('fileName');
+      const analyzeBtn = document.getElementById('analyzeBtn');
+      const previewBtn = document.getElementById('previewBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const manualEditor = document.getElementById('manualEditor');
+      const aiPrompt = document.getElementById('aiPrompt');
+      const executePromptBtn = document.getElementById('executePromptBtn');
+      const promptPresets = document.querySelectorAll('.prompt-preset');
+
+      // Add event listeners
+      pdfFileInput.addEventListener('change', displayFileName);
+      analyzeBtn.addEventListener('click', analyzeDocument);
+      previewBtn.addEventListener('click', previewFile);
+      downloadBtn.addEventListener('click', downloadEditedPDF);
+      executePromptBtn.addEventListener('click', executeAIPrompt);
+      
+      // Add preset button listeners
+      promptPresets.forEach(btn => {
+        btn.addEventListener('click', function() {
+          aiPrompt.value = this.dataset.prompt;
+          executeAIPrompt();
+        });
+      });
+      
+      // Allow enter key in prompt input
+      aiPrompt.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          executeAIPrompt();
+        }
+      });
+
+      function displayFileName() {
+        if (pdfFileInput.files.length > 0) {
+          const file = pdfFileInput.files[0];
+          const fileSize = (file.size / 1024 / 1024).toFixed(2);
+          fileName.textContent = `${file.name} (${fileSize} MB)`;
+          fileName.style.color = '#28A745';
+        } else {
+          fileName.textContent = 'No file is selected';
+          fileName.style.color = '#8235c2';
+        }
+      }
+
+      function previewFile() {
+        if (pdfFileInput.files.length === 0) {
+          alert('⚠️ Please select a PDF file first.');
+          return;
+        }
+        
+        const file = pdfFileInput.files[0];
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        
+        manualEditor.value = `📄 File Preview:
+        
+File Name: ${file.name}
+File Size: ${fileSize} MB
+File Type: ${file.type}
+Last Modified: ${new Date(file.lastModified).toLocaleString()}
+
+✅ Ready for AI analysis! Click "Analyze Document with AI" to extract and analyze the content.`;
+      }
+
+      async function analyzeDocument() {
+        if (pdfFileInput.files.length === 0) {
+          alert('⚠️ Please select a PDF file first.');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', pdfFileInput.files[0]);
+
+        // Update button state
+        const originalText = analyzeBtn.textContent;
+        analyzeBtn.disabled = true;
+        analyzeBtn.textContent = '🔄 Analyzing...';
+        manualEditor.value = '⏳ Analyzing document with AI...\n\nThis may take a few moments...';
+
+        try {
+          const response = await fetch('/analyze', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          if (data.text) {
+            manualEditor.value = data.text;
+            
+            if (data.suggestions) {
+              manualEditor.value += '\n\n🧠 AI Suggestions:\n\n' + data.suggestions;
+            }
+          } else if (data.error) {
+            manualEditor.value = '❌ Error: ' + data.error;
+          } else {
+            manualEditor.value = '❌ No content extracted from the PDF.';
+          }
+
+        } catch (error) {
+          console.error('Analysis error:', error);
+          manualEditor.value = `❌ Error analyzing document: ${error.message}\n\nPlease check:\n• File is a valid PDF\n• File is not corrupted\n• Server is running\n• Network connection is stable`;
+        } finally {
+          analyzeBtn.disabled = false;
+          analyzeBtn.textContent = originalText;
+        }
+      }
+
+      async function executeAIPrompt() {
+        const prompt = aiPrompt.value.trim();
+        const currentText = manualEditor.value.trim();
+        
+        if (!prompt) {
+          alert('⚠️ Please enter an AI instruction.');
+          return;
+        }
+        
+        if (!currentText) {
+          alert('⚠️ Please analyze a document first or add some text to edit.');
+          return;
+        }
+
+        // Update button state
+        const originalText = executePromptBtn.textContent;
+        executePromptBtn.disabled = true;
+        executePromptBtn.textContent = '🔄 Processing...';
+        
+        // Save current content
+        const originalContent = manualEditor.value;
+        manualEditor.value = `🤖 AI is processing your request: "${prompt}"\n\nOriginal content preserved below:\n\n${originalContent}`;
+
+        try {
+          const response = await fetch('/fill_from_prompt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              user_prompt: prompt,
+              current_text: currentText 
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          if (data.updated_text) {
+            manualEditor.value = data.updated_text;
+            aiPrompt.value = ''; // Clear the prompt
+          } else if (data.error) {
+            manualEditor.value = `❌ AI Error: ${data.error}\n\nOriginal content restored:\n\n${originalContent}`;
+          } else {
+            manualEditor.value = originalContent; // Restore original
+          }
+
+        } catch (error) {
+          console.error('AI Prompt error:', error);
+          manualEditor.value = `❌ Error processing AI request: ${error.message}\n\nOriginal content restored:\n\n${originalContent}`;
+        } finally {
+          executePromptBtn.disabled = false;
+          executePromptBtn.textContent = originalText;
+        }
+      }
+
+      async function downloadEditedPDF() {
+        const editedText = manualEditor.value.trim();
+        
+        if (!editedText) {
+          alert('⚠️ Please analyze a document or add some text to edit first.');
+          return;
+        }
+
+        // Update button state
+        const originalText = downloadBtn.textContent;
+        downloadBtn.disabled = true;
+        downloadBtn.textContent = '🔄 Generating PDF...';
+
+        try {
+          const response = await fetch('/edit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updated_text: editedText }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          // Check if response is JSON (error) or blob (PDF)
+          const contentType = response.headers.get('content-type');
+          
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to generate PDF');
+          }
+
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'edited_document.pdf';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          alert('✅ PDF downloaded successfully!');
+
+        } catch (error) {
+          console.error('Download error:', error);
+          alert(`❌ Error generating PDF: ${error.message}`);
+        } finally {
+          downloadBtn.disabled = false;
+          downloadBtn.textContent = originalText;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
