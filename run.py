@@ -11,6 +11,7 @@ import sqlite3
 import subprocess
 import re
 import mimetypes
+from datetime import datetime
 from functools import wraps
 from collections import deque
 from dotenv import load_dotenv
@@ -47,11 +48,11 @@ app = Flask(__name__)
 load_dotenv('api.env')
 
 # Firebase Realtime Database config
-FIREBASE_CRED_PATH = os.getenv('FIREBASE_CRED_PATH')
+FIREBASE_CRED_PATH = 'docshift.json'
 FIREBASE_DB_URL = 'https://docshift-86065-default-rtdb.firebaseio.com/'
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(json.loads(FIREBASE_CRED_PATH))
+    cred = credentials.Certificate(FIREBASE_CRED_PATH)
     firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_DB_URL})
 
 # Cloudinary config
@@ -93,6 +94,16 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'logged_in' not in session:
+            return redirect(url_for('login'))
+        if session.get('role') != 'admin':
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 def store_url_in_firebase(url, category, filename):
     """Store URL in firebase per user under storage/{username}/{category}."""
     safe_key = re.sub(r'[./#$\[\]]', '_', filename)
@@ -125,8 +136,24 @@ def init_db():
         original_filename TEXT NOT NULL,
         converted_filename TEXT NOT NULL,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-        file_path TEXT
+        file_path TEXT,
+        cloudinary_url TEXT,
+        username TEXT,
+        status TEXT DEFAULT 'error'
     )''')
+    # Add new columns if they don't exist (for existing databases)
+    try:
+        c.execute('ALTER TABLE conversions ADD COLUMN cloudinary_url TEXT')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    try:
+        c.execute('ALTER TABLE conversions ADD COLUMN username TEXT')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    try:
+        c.execute('ALTER TABLE conversions ADD COLUMN status TEXT DEFAULT "error"')
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL UNIQUE,
@@ -135,13 +162,19 @@ def init_db():
     conn.commit()
     conn.close()
 
-def log_conversion(conversion_type, original_filename, converted_filename, file_path=None):
+def log_conversion(conversion_type, original_filename, converted_filename, file_path=None, cloudinary_url=None, status=None):
     conn = sqlite3.connect('file_conversion.db')
     c = conn.cursor()
+    username = session.get('username', 'admin')
+    
+    # Determine status based on cloudinary_url if not explicitly provided
+    if status is None:
+        status = 'success' if cloudinary_url else 'error'
+    
     c.execute('''
-        INSERT INTO conversions (conversion_type, original_filename, converted_filename, file_path)
-        VALUES (?, ?, ?, ?)
-    ''', (conversion_type, original_filename, converted_filename, file_path))
+        INSERT INTO conversions (conversion_type, original_filename, converted_filename, file_path, cloudinary_url, username, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (conversion_type, original_filename, converted_filename, file_path, cloudinary_url, username, status))
     conn.commit()
     conn.close()
 
@@ -241,7 +274,7 @@ def login():
             session['role'] = role
             session['logged_in'] = True  # fix session persistence
             if role == 'admin':
-                return render_template('register_company.html')
+                return redirect(url_for('admin_dashboard'))
             else:
                 return render_template('index.html', username=username)
     return render_template('login.html', error=error)
@@ -252,6 +285,197 @@ def logout():
     session.pop('username', None)
     session.pop('role', None)
     return redirect(url_for('login'))
+
+# --- Admin Routes ---
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    return render_template('admin_dashboard.html')
+
+@app.route('/api/admin/dashboard-data')
+@admin_required
+def admin_dashboard_data():
+    
+    try:
+        # Get all company data from Firebase
+        companies_ref = db.reference('Data')
+        companies_data = companies_ref.get() or {}
+        
+        # Process companies data
+        companies_list = []
+        total_companies = 0
+        active_companies = 0
+        
+        for username, company_data in companies_data.items():
+            if isinstance(company_data, dict) and 'company_name' in company_data:
+                total_companies += 1
+                active_companies += 1  # For now, all are considered active
+                
+                companies_list.append({
+                    'company_name': company_data.get('company_name', ''),
+                    'owner_name': company_data.get('owner_name', ''),
+                    'email': company_data.get('email', ''),
+                    'phone': company_data.get('phone', ''),
+                    'username': username,
+                    'registered_date': 'Recent'  # You can add timestamp later
+                })
+        
+        # Sort by company name
+        companies_list.sort(key=lambda x: x['company_name'])
+        
+        # Get storage data for file count (optional)
+        storage_ref = db.reference('storage')
+        storage_data = storage_ref.get() or {}
+        total_files = 0
+        
+        for user_storage in storage_data.values():
+            if isinstance(user_storage, dict):
+                for storage_type in ['txt', 'img', 'audio', 'files']:
+                    type_data = user_storage.get(storage_type, {})
+                    if isinstance(type_data, dict):
+                        total_files += len(type_data)
+        
+        dashboard_data = {
+            'totalCompanies': total_companies,
+            'activeCompanies': active_companies,
+            'totalUsers': total_companies,  # Same as companies for now
+            'totalFiles': total_files,
+            'companies': companies_list[:10]  # Show only recent 10
+        }
+        
+        return jsonify(dashboard_data)
+        
+    except Exception as e:
+        logger.error(f"Error fetching admin dashboard data: {str(e)}")
+        return jsonify({"error": "Failed to fetch data"}), 500
+
+@app.route('/admin/companies')
+@admin_required
+def admin_companies():
+    return render_template('admin_companies.html')
+
+@app.route('/api/admin/all-companies')
+@admin_required
+def admin_all_companies():
+    try:
+        # Get all company data from Firebase
+        companies_ref = db.reference('Data')
+        companies_data = companies_ref.get() or {}
+        
+        # Process companies data
+        companies_list = []
+        
+        for username, company_data in companies_data.items():
+            if isinstance(company_data, dict) and 'company_name' in company_data:
+                companies_list.append({
+                    'company_name': company_data.get('company_name', ''),
+                    'owner_name': company_data.get('owner_name', ''),
+                    'email': company_data.get('email', ''),
+                    'phone': company_data.get('phone', ''),
+                    'username': username,
+                    'registered_date': 'Recent'  # You can add timestamp later
+                })
+        
+        # Sort by company name
+        companies_list.sort(key=lambda x: x['company_name'])
+        
+        return jsonify({'companies': companies_list})
+        
+    except Exception as e:
+        logger.error(f"Error fetching all companies data: {str(e)}")
+        return jsonify({"error": "Failed to fetch data"}), 500
+
+@app.route('/admin/company-details')
+@admin_required
+def company_details():
+    return render_template('company_details.html')
+
+@app.route('/api/admin/company-details/<username>')
+@admin_required
+def company_details_api(username):
+    try:
+        # Get company basic info
+        company_ref = db.reference(f'Data/{username}')
+        company_data = company_ref.get()
+        
+        if not company_data:
+            return jsonify({"error": "Company not found"}), 404
+        
+        # Get storage data for usage statistics
+        storage_ref = db.reference(f'storage/{username}')
+        storage_data = storage_ref.get() or {}
+        
+        # Calculate statistics
+        total_files = 0
+        tool_usage = {
+            'pdf': 0,
+            'image': 0,
+            'text': 0,
+            'audio': 0,
+            'compress': 0,
+            'merge': 0,
+            'split': 0,
+            'convert': 0
+        }
+        
+        # Count files by type
+        for storage_type, files in storage_data.items():
+            if isinstance(files, dict):
+                file_count = len(files)
+                total_files += file_count
+                
+                # Map storage types to tool usage
+                if storage_type == 'txt':
+                    tool_usage['text'] += file_count
+                elif storage_type == 'img':
+                    tool_usage['image'] += file_count
+                elif storage_type == 'audio':
+                    tool_usage['audio'] += file_count
+                elif storage_type == 'files':
+                    tool_usage['pdf'] += file_count
+                    tool_usage['convert'] += file_count
+        
+        # Calculate approximate storage (assuming average file size)
+        storage_used = total_files * 2.5  # Average 2.5 MB per file
+        
+        # Count unique tools used
+        tools_used = sum(1 for count in tool_usage.values() if count > 0)
+        
+        # Generate sample recent activity
+        recent_activity = []
+        if total_files > 0:
+            activities = [
+                {"type": "pdf", "title": "PDF Converted", "description": "Word document converted to PDF", "time": "2 hours ago"},
+                {"type": "image", "title": "Image Processed", "description": "Background removed from image", "time": "5 hours ago"},
+                {"type": "text", "title": "Text Uploaded", "description": "Text content saved to storage", "time": "1 day ago"},
+                {"type": "convert", "title": "File Conversion", "description": "Excel file converted to PDF", "time": "2 days ago"},
+                {"type": "audio", "title": "Audio Generated", "description": "Text converted to speech", "time": "3 days ago"}
+            ]
+            recent_activity = activities[:min(5, total_files)]
+        
+        response_data = {
+            'company': {
+                'company_name': company_data.get('company_name', ''),
+                'owner_name': company_data.get('owner_name', ''),
+                'email': company_data.get('email', ''),
+                'phone': company_data.get('phone', ''),
+                'username': username
+            },
+            'stats': {
+                'totalFiles': total_files,
+                'storageUsed': round(storage_used, 1),
+                'monthlyActivity': total_files,  # Simplified for now
+                'toolsUsed': tools_used
+            },
+            'toolUsage': tool_usage,
+            'recentActivity': recent_activity
+        }
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        logger.error(f"Error fetching company details for {username}: {str(e)}")
+        return jsonify({"error": "Failed to fetch company details"}), 500
 
 @app.route('/')
 @login_required
@@ -315,6 +539,11 @@ def bg_remover_page():
 @login_required
 def logs_page():
     return render_template('logs.html')
+
+@app.route('/history')
+@login_required
+def history_page():
+    return render_template('history.html')
 
 @app.route('/compress-pdf')
 @login_required
@@ -394,12 +623,12 @@ def convert_image_to_pdf():
     try:
         image_list[0].save(output_path, save_all=True, append_images=image_list[1:], format='PDF')
 
-        log_conversion('image-to-pdf', files[0].filename, output_filename, output_path)
-
         username = session.get('username')
         cloudinary_folder = f'storage/{username}/files'
         cloudinary_url = upload_to_cloudinary(output_path, cloudinary_folder)
         store_url_in_firebase(cloudinary_url, 'files', output_filename)
+
+        log_conversion('image-to-pdf', files[0].filename, output_filename, output_path, cloudinary_url)
 
         return send_file(output_path, as_attachment=True, download_name="converted.pdf", mimetype='application/pdf')
     except Exception as e:
@@ -429,12 +658,12 @@ def convert_pdf_to_image():
             
         images[0].save(output_path, format='PNG')
 
-        log_conversion('pdf-to-image', pdf_file.filename, output_filename, output_path)
-
         username = session.get('username')
         cloudinary_folder = f'storage/{username}/img'
         cloudinary_url = upload_to_cloudinary(output_path, cloudinary_folder)
         store_url_in_firebase(cloudinary_url, 'img', output_filename)
+
+        log_conversion('pdf-to-image', pdf_file.filename, output_filename, output_path, cloudinary_url)
 
         return send_file(output_path, as_attachment=True, download_name="converted.png", mimetype='image/png')
     except Exception as e:
@@ -467,12 +696,12 @@ def merge_pdfs():
         merger.write(output_path)
         merger.close()
 
-        log_conversion('merge-pdfs', files[0].filename, output_filename, output_path)
-
         username = session.get('username')
         cloudinary_folder = f'storage/{username}/files'
         cloudinary_url = upload_to_cloudinary(output_path, cloudinary_folder)
         store_url_in_firebase(cloudinary_url, 'files', output_filename)
+
+        log_conversion('merge-pdfs', files[0].filename, output_filename, output_path, cloudinary_url)
 
         return send_file(output_path, as_attachment=True, download_name='merged.pdf', mimetype='application/pdf')
     except Exception as e:
@@ -511,6 +740,66 @@ def download():
     store_url_in_firebase(cloudinary_url, category, file_name)
 
     return send_file(file_path, as_attachment=True, download_name=file_name, mimetype=mime_type)
+
+# --- Download from Cloudinary/Firebase ---
+@app.route('/download-file/<int:file_id>')
+@login_required
+def download_file_from_cloud(file_id):
+    """Download file from Cloudinary using file ID from database."""
+    try:
+        # Get file info from database
+        conn = sqlite3.connect('file_conversion.db')
+        c = conn.cursor()
+        c.execute('''
+            SELECT cloudinary_url, converted_filename, original_filename 
+            FROM conversions 
+            WHERE id = ? AND username = ?
+        ''', (file_id, session.get('username')))
+        result = c.fetchone()
+        conn.close()
+        
+        if not result:
+            return jsonify({'error': 'File not found or access denied'}), 404
+            
+        cloudinary_url, converted_filename, original_filename = result
+        
+        if not cloudinary_url:
+            return jsonify({'error': 'File URL not available'}), 404
+        
+        # Fetch file from Cloudinary
+        response = requests.get(cloudinary_url)
+        if response.status_code != 200:
+            return jsonify({'error': 'File not accessible from cloud storage'}), 404
+        
+        # Create a temporary file to serve
+        temp_file = tempfile.NamedTemporaryFile(delete=False)
+        temp_file.write(response.content)
+        temp_file.close()
+        
+        # Determine MIME type
+        mime_type, _ = mimetypes.guess_type(converted_filename)
+        if not mime_type:
+            mime_type = 'application/octet-stream'
+        
+        def cleanup_temp_file():
+            try:
+                os.unlink(temp_file.name)
+            except:
+                pass
+        
+        # Schedule cleanup after sending file
+        from threading import Timer
+        Timer(5.0, cleanup_temp_file).start()
+        
+        return send_file(
+            temp_file.name, 
+            as_attachment=True, 
+            download_name=converted_filename, 
+            mimetype=mime_type
+        )
+        
+    except Exception as e:
+        return jsonify({'error': f'Download failed: {str(e)}'}), 500
 
 # --- Word to PDF ---
 @app.route('/convert_word_to_pdf', methods=['POST'])
@@ -669,14 +958,14 @@ def convert_word_to_pdf():
         if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
             raise Exception("PDF conversion failed - output file is empty or missing")
 
-        # Log conversion (replace with your implementation)
-        log_conversion('word-to-pdf', file.filename, output_filename, output_path)
-
         # Upload to Cloudinary and store in Firebase (replace with your implementations)
         username = session.get('username')
         cloudinary_folder = f'storage/{username}/files'
         cloudinary_url = upload_to_cloudinary(output_path, cloudinary_folder)
         store_url_in_firebase(cloudinary_url, 'files', output_filename)
+
+        # Log conversion (replace with your implementation)
+        log_conversion('word-to-pdf', file.filename, output_filename, output_path, cloudinary_url)
 
         base_name = file.filename.rsplit('.', 1)[0] if '.' in file.filename else file.filename
         download_name = f"{base_name}.pdf"
@@ -743,12 +1032,12 @@ def convert_excel_to_pdf():
         with open(output_path, 'wb') as f:
             f.write(pdf_io.getvalue())
 
-        log_conversion('excel-to-pdf', file.filename, output_filename, output_path)
-
         username = session.get('username')
         cloudinary_folder = f'storage/{username}/files'
         cloudinary_url = upload_to_cloudinary(output_path, cloudinary_folder)
         store_url_in_firebase(cloudinary_url, 'files', output_filename)
+
+        log_conversion('excel-to-pdf', file.filename, output_filename, output_path, cloudinary_url)
 
         return send_file(output_path, as_attachment=True, download_name=file.filename.replace('.xlsx', '.pdf'), mimetype='application/pdf')
     except Exception as e:
@@ -804,11 +1093,11 @@ def convert_pdf_to_ppt():
         with open(output_path, 'wb') as f:
             f.write(ppt_io.getvalue())
 
-        log_conversion('pdf-to-ppt', file.filename, output_filename, output_path)
-
         username = session.get('username')
         cloudinary_folder = f'storage/{username}/files'
         cloudinary_url = upload_to_cloudinary(output_path, cloudinary_folder)
+        
+        log_conversion('pdf-to-ppt', file.filename, output_filename, output_path, cloudinary_url)
         store_url_in_firebase(cloudinary_url, 'files', output_filename)
 
         return send_file(output_path, as_attachment=True,
@@ -861,7 +1150,7 @@ def remove_background():
         cloudinary_url = upload_to_cloudinary(temp_file_path, cloudinary_folder)
         store_url_in_firebase(cloudinary_url, 'img', output_filename)
 
-        log_conversion('background-remover', file.filename, output_filename, temp_file_path)
+        log_conversion('background-remover', file.filename, output_filename, temp_file_path, cloudinary_url)
 
         return send_file(temp_file_path, as_attachment=True, download_name='background_removed.png', mimetype='image/png')
     except Exception as e:
@@ -941,7 +1230,7 @@ def remove_pages():
         temp_output_path = temp_file.name
         temp_file.write(pdf_buffer.getvalue())
 
-    log_conversion('remove-pages', filename, output_filename, temp_output_path)
+    log_conversion('remove-pages', filename, output_filename, temp_output_path, None, 'success')
 
     username = session.get('username')
     cloudinary_folder = f'storage/{username}/files'
@@ -1090,7 +1379,7 @@ def compress_pdf():
         logger.info(f"Size reduction: {reduction:.2f}%")
 
         # Log conversion for tracking purposes
-        log_conversion('compress-pdf', filename, output_filename, "memory_cache")
+        log_conversion('compress-pdf', filename, output_filename, "memory_cache", None, 'success')
 
         # Clean up input file
         try:
@@ -1130,6 +1419,7 @@ def compress_pdf():
 # Store split PDFs and compressed PDFs in memory for immediate download
 split_pdf_cache = {}
 compressed_pdf_cache = {}
+audio_cache = {}
 
 @app.route('/download-split/<filename>')
 @login_required
@@ -1287,7 +1577,7 @@ def split_pdf():
         output_filename2 = f"split_part2_{uuid.uuid4().hex}.pdf"
         
         # Log conversion for tracking purposes
-        log_conversion('split-pdf', filename, f"{output_filename1}, {output_filename2}", "memory_cache")
+        log_conversion('split-pdf', filename, f"{output_filename1}, {output_filename2}", "memory_cache", None, 'success')
 
         # Clean up the original file
         os.remove(filepath)
@@ -1377,7 +1667,7 @@ def analyze_text_with_openrouter(text, format_type):
 @app.route('/analyze_document', methods=['POST'])
 @login_required
 def analyze_document():
-    global current_document_text
+    global current_document_text, conversation_history
     try:
         if 'docFile' not in request.files:
             return jsonify({'error': 'No document provided'}), 400
@@ -1402,7 +1692,12 @@ def analyze_document():
         if text.startswith('Error'):
             return jsonify({'error': text}), 500
 
+        # Set global variable and clear conversation history for new document
         current_document_text = text
+        conversation_history.clear()
+        
+        logger.debug(f"Document analyzed. Text length: {len(current_document_text)}")
+        
         analysis = analyze_text_with_openrouter(text, format_type)
         if analysis.startswith('Error'):
             return jsonify({'error': analysis}), 500
@@ -1414,7 +1709,7 @@ def analyze_document():
             temp_file.write(f"File: {doc_file.filename}\nFormat: {format_type}\nAnalysis:\n{analysis}\n\n")
             analysis_path = temp_file.name
 
-        log_conversion('document-screener', doc_file.filename, analysis_filename, analysis_path)
+        log_conversion('document-screener', doc_file.filename, analysis_filename, analysis_path, None, 'success')
         
         # Clean up temp file
         try:
@@ -1425,6 +1720,7 @@ def analyze_document():
             
         return jsonify({'analysis': analysis})
     except Exception as e:
+        logger.error(f"Document analysis failed: {str(e)}")
         return jsonify({'error': f"Document analysis failed: {str(e)}"}), 500
 
 @app.route('/chat', methods=['POST'])
@@ -1436,8 +1732,12 @@ def chat():
         message = data.get('message', '')
         if not message:
             return jsonify({'error': 'No message provided'}), 400
+        
+        # Debug: Log the current document text status
+        logger.debug(f"Current document text length: {len(current_document_text) if current_document_text else 0}")
+        
         if not current_document_text:
-            return jsonify({'error': 'No document uploaded. Please upload a document first.'}), 400
+            return jsonify({'error': 'No document uploaded. Please upload and analyze a document first using the "Analyze Document" button.'}), 400
 
         context = f"Document text:\n\n{current_document_text[:2000]}\n\nConversation history:\n"
         for role, msg in conversation_history:
@@ -1462,6 +1762,7 @@ def chat():
         conversation_history.append(('Assistant', response_text))
         return jsonify({'response': response_text})
     except Exception as e:
+        logger.error(f"Chat error: {str(e)}")
         return jsonify({'error': f"Chat failed: {str(e)}"}), 500
 
 # --- Plagiarism Scanner ---
@@ -1551,16 +1852,21 @@ def generate_tts():
         tts = gTTS(text=text, lang='en')
         tts.save(filepath)
 
-        log_conversion('text-to-speech', 'user_input.txt', filename, filepath)
-
+        # Upload to cloudinary first, before logging
         username = session.get('username')
         cloudinary_folder = f'storage/{username}/audio'
         cloudinary_url = upload_to_cloudinary(filepath, cloudinary_folder)
         store_url_in_firebase(cloudinary_url, 'audio', filename)
 
-        # Store the audio data for download (similar to how PDFs are handled)
+        # Now log the conversion with the cloudinary_url
+        log_conversion('text-to-speech', 'user_input.txt', filename, filepath, cloudinary_url)
+
+        # Store the audio data for download in cache
         with open(filepath, 'rb') as f:
             audio_data = f.read()
+        
+        # Store in audio cache for immediate download
+        audio_cache[filename] = audio_data
         
         # Clean up temp file
         try:
@@ -1568,7 +1874,13 @@ def generate_tts():
         except Exception as e:
             logger.warning(f"Failed to clean up temp audio file: {str(e)}")
 
-        return jsonify({'audio_url': f'/download_audio/{filename}', 'audio_data': audio_data.hex()})
+        return jsonify({
+            'success': True,
+            'audio_url': f'/stream_audio/{filename}',  # For playing in browser
+            'download_url': f'/download_audio/{filename}',  # For downloading
+            'filename': filename,
+            'message': 'Text converted to speech successfully!'
+        })
     except Exception as e:
         logger.error(f"Text to speech conversion failed: {str(e)}", exc_info=True)
         return jsonify({'error': f"Text to speech conversion failed: {str(e)}"}), 500
@@ -1576,10 +1888,67 @@ def generate_tts():
 @app.route('/download_audio/<filename>')
 @login_required
 def download_audio(filename):
-    # Since we're using cloud storage, redirect to cloud URL or serve from memory
-    # For now, return a simple response - this function may need to be updated 
-    # based on how audio files are stored in your implementation
-    return jsonify({'error': 'Audio file not found - using cloud storage'}), 404
+    logger.info(f"Audio download requested for: {filename}")
+    logger.info(f"Available audio files in cache: {list(audio_cache.keys())}")
+    
+    # Check if file exists in memory cache
+    if filename not in audio_cache:
+        logger.error(f"Audio file {filename} not found in cache")
+        return jsonify({'error': 'Audio file not found or expired'}), 404
+    
+    try:
+        # Get audio data from memory cache
+        audio_data = audio_cache[filename]
+        logger.info(f"Found audio data, size: {len(audio_data)} bytes")
+        
+        # Create a BytesIO object with the audio data
+        audio_buffer = io.BytesIO(audio_data)
+        audio_buffer.seek(0)
+        
+        # Don't delete from cache immediately - let it be accessed multiple times
+        # The cache will be cleaned up by a timer or manually
+        
+        logger.info(f"Serving audio file: {filename}")
+        return send_file(
+            audio_buffer, 
+            as_attachment=True, 
+            download_name=filename, 
+            mimetype='audio/mpeg'
+        )
+    except Exception as e:
+        logger.error(f"Audio download failed: {str(e)}", exc_info=True)
+        return jsonify({'error': f"Audio download failed: {str(e)}"}), 500
+
+@app.route('/stream_audio/<filename>')
+@login_required
+def stream_audio(filename):
+    """Stream audio for playing in browser (not as download)"""
+    logger.info(f"Audio stream requested for: {filename}")
+    
+    # Check if file exists in memory cache
+    if filename not in audio_cache:
+        logger.error(f"Audio file {filename} not found in cache")
+        return jsonify({'error': 'Audio file not found or expired'}), 404
+    
+    try:
+        # Get audio data from memory cache
+        audio_data = audio_cache[filename]
+        logger.info(f"Streaming audio data, size: {len(audio_data)} bytes")
+        
+        # Create a BytesIO object with the audio data
+        audio_buffer = io.BytesIO(audio_data)
+        audio_buffer.seek(0)
+        
+        logger.info(f"Streaming audio file: {filename}")
+        return send_file(
+            audio_buffer, 
+            as_attachment=False,  # Don't force download for streaming
+            download_name=filename, 
+            mimetype='audio/mpeg'
+        )
+    except Exception as e:
+        logger.error(f"Audio streaming failed: {str(e)}", exc_info=True)
+        return jsonify({'error': f"Audio streaming failed: {str(e)}"}), 500
 
 # --- Speech to Text ---
 
@@ -1598,12 +1967,14 @@ def save_transcript():
             temp_file.write(transcript + '\n')
             transcript_path = temp_file.name
             
-        log_conversion('speech-to-text', 'transcript.txt', transcript_filename, transcript_path)
-
+        # Upload to cloudinary first, before logging
         username = session.get('username')
         cloudinary_folder = f'storage/{username}/txt'
         cloudinary_url = upload_to_cloudinary(transcript_path, cloudinary_folder)
         store_url_in_firebase(cloudinary_url, 'txt', transcript_filename)
+
+        # Now log the conversion with the cloudinary_url
+        log_conversion('speech-to-text', 'transcript.txt', transcript_filename, transcript_path, cloudinary_url)
 
         # Clean up temp file
         try:
@@ -1652,7 +2023,7 @@ def upload_audio():
                     # Cleanup and return
                     if temp_file_path and os.path.exists(temp_file_path):
                         os.remove(temp_file_path)
-                    log_conversion('speech-to-text', audio_file.filename, 'transcript.txt', None)
+                    log_conversion('speech-to-text', audio_file.filename, 'transcript.txt', None, None, 'success')
                     return jsonify({'transcript': transcript})
                 except Exception:
                     return jsonify({'error': 'FFmpeg is required for MP3 conversion. Please install FFmpeg or upload a WAV file instead.'}), 400
@@ -1672,7 +2043,7 @@ def upload_audio():
             except sr.RequestError as e:
                 transcript = f"Speech recognition service error: {str(e)}"
         
-        log_conversion('speech-to-text', audio_file.filename, 'transcript.txt', None)
+        log_conversion('speech-to-text', audio_file.filename, 'transcript.txt', None, None, 'success')
         return jsonify({'transcript': transcript})
         
     except Exception as e:
@@ -1779,7 +2150,7 @@ def analyze():
         if not suggestions:
             raise ValueError("Empty response content from API")
 
-        log_conversion('ai-pdf-editor', filename, 'analysis.json', None)
+        log_conversion('ai-pdf-editor', filename, 'analysis.json', None, None, 'success')
         return jsonify({"text": extracted_text, "suggestions": suggestions})
     except requests.exceptions.RequestException as e:
         logger.error(f"OpenRouter API request failed: {str(e)}")
@@ -1815,7 +2186,7 @@ def edit():
             output_path = temp_file.name
             
         pdf.output(output_path)
-        log_conversion('ai-pdf-editor', 'user_input.txt', output_filename, output_path)
+        log_conversion('ai-pdf-editor', 'user_input.txt', output_filename, output_path, None, 'success')
         return send_file(
             output_path,
             mimetype='application/pdf',
@@ -1872,7 +2243,7 @@ def fill_from_prompt():
         if not updated_text:
             return jsonify({'error': 'Empty response from API'}), 500
         latest_text = updated_text
-        log_conversion('ai-pdf-editor', 'user_prompt.txt', 'updated_text.txt', None)
+        log_conversion('ai-pdf-editor', 'user_prompt.txt', 'updated_text.txt', None, None, 'success')
         return jsonify({"updated_text": updated_text})
     except Exception as e:
         logger.error(f"Prompt-based edit failed: {str(e)}")
@@ -1921,8 +2292,7 @@ def summarize():
             temp_file.write(summary)
             summary_path = temp_file.name
 
-        log_conversion('text-summarizer', 'user_input.txt', summary_filename, summary_path)
-
+        # Upload to cloudinary first, before logging
         username = session.get('username')
         cloudinary_folder = f'storage/{username}/txt'
         try:
@@ -1930,6 +2300,10 @@ def summarize():
             store_url_in_firebase(cloudinary_url, 'txt', summary_filename)
         except Exception as upload_e:
             logger.error(f"Cloudinary/Firebase upload failed for summary: {str(upload_e)}")
+            cloudinary_url = None  # Set to None if upload fails
+
+        # Now log the conversion with the cloudinary_url
+        log_conversion('text-summarizer', 'user_input.txt', summary_filename, summary_path, cloudinary_url)
 
         # Clean up temp file
         try:
@@ -1942,8 +2316,393 @@ def summarize():
         logger.error(f"Text summarization failed: {str(e)}", exc_info=True)
         return jsonify({'error': f"Text summarization failed: {str(e)}"}), 500
 
+@app.route('/admin/logs', methods=['GET'])
+@login_required
+def get_conversion_logs():
+    """API endpoint to fetch conversion logs for the history page."""
+    try:
+        conn = sqlite3.connect('file_conversion.db')
+        c = conn.cursor()
+        c.execute('''
+            SELECT id, conversion_type, original_filename, converted_filename, file_path, timestamp, cloudinary_url, username, status
+            FROM conversions 
+            WHERE username = ?
+            ORDER BY timestamp DESC
+        ''', (session.get('username'),))
+        rows = c.fetchall()
+        conn.close()
+        
+        logs = []
+        for row in rows:
+            # Use the actual status from database, with fallback logic
+            actual_status = row[8] if len(row) > 8 and row[8] else None
+            if actual_status is None:
+                # Fallback: determine status based on available data
+                if row[6]:  # cloudinary_url exists
+                    actual_status = 'success'
+                elif row[1] in ['speech-to-text', 'document-screener', 'ai-pdf-editor', 'text-summarizer']:
+                    # These don't always need cloudinary_url to be successful
+                    actual_status = 'success'
+                else:
+                    actual_status = 'error'
+            
+            log_entry = {
+                'id': row[0],
+                'conversion_type': row[1],
+                'original_filename': row[2],
+                'filename': row[3],
+                'download_path': f"/download-file/{row[0]}" if (row[6] or actual_status == 'success') else None,
+                'timestamp': row[5],
+                'status': actual_status,
+                'file_size': 'Unknown',  # You can add file size calculation if needed
+                'cloudinary_url': row[6],
+                'username': row[7]
+            }
+            logs.append(log_entry)
+        
+        return jsonify({'success': True, 'logs': logs})
+    except Exception as e:
+        logger.error(f"Failed to fetch conversion logs: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# --- Cache Cleanup Functions ---
+
+def cleanup_audio_cache():
+    """Clean up audio cache to prevent memory leaks"""
+    try:
+        if audio_cache:
+            logger.info(f"Cleaning up {len(audio_cache)} audio files from cache")
+            audio_cache.clear()
+    except Exception as e:
+        logger.error(f"Error cleaning up audio cache: {str(e)}")
+
+# Schedule periodic cleanup every 10 minutes
+import threading
+import time
+
+def periodic_cleanup():
+    while True:
+        time.sleep(600)  # 10 minutes
+        cleanup_audio_cache()
+
+# Start cleanup thread
+cleanup_thread = threading.Thread(target=periodic_cleanup, daemon=True)
+cleanup_thread.start()
+
+# --- Profile Management Routes ---
+
+def update_users_table():
+    """Update users table to include profile fields"""
+    conn = sqlite3.connect('file_conversion.db')
+    c = conn.cursor()
+    
+    # Add new columns if they don't exist
+    profile_columns = [
+        ('name', 'TEXT'),
+        ('email', 'TEXT'),
+        ('contact_number', 'TEXT'),
+        ('country', 'TEXT'),
+        ('profile_picture', 'TEXT'),
+        ('membership_status', 'TEXT DEFAULT "Standard"'),
+        ('created_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP')
+    ]
+    
+    for column_name, column_type in profile_columns:
+        try:
+            c.execute(f'ALTER TABLE users ADD COLUMN {column_name} {column_type}')
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+    
+    conn.commit()
+    conn.close()
+
+def get_user_profile(username):
+    """Get user profile data from database and Firebase"""
+    try:
+        # Get from Firebase first
+        user_ref = db.reference(f'Data/{username}')
+        user_data = user_ref.get()
+        
+        if user_data:
+            return user_data
+        
+        # Fallback to SQLite
+        conn = sqlite3.connect('file_conversion.db')
+        c = conn.cursor()
+        c.execute('''SELECT username, name, email, contact_number, country, 
+                           profile_picture, membership_status, created_at 
+                    FROM users WHERE username = ?''', (username,))
+        row = c.fetchone()
+        conn.close()
+        
+        if row:
+            return {
+                'username': row[0],
+                'name': row[1],
+                'email': row[2],
+                'contact_number': row[3],
+                'country': row[4],
+                'profile_picture': row[5],
+                'membership_status': row[6] or 'Standard',
+                'created_at': row[7]
+            }
+        return None
+    except Exception as e:
+        logger.error(f"Error getting user profile: {str(e)}")
+        return None
+
+def update_user_profile(username, profile_data):
+    """Update user profile in both Firebase and SQLite"""
+    try:
+        # Update Firebase
+        user_ref = db.reference(f'Data/{username}')
+        existing_data = user_ref.get() or {}
+        existing_data.update(profile_data)
+        user_ref.set(existing_data)
+        
+        # Update SQLite as backup
+        conn = sqlite3.connect('file_conversion.db')
+        c = conn.cursor()
+        
+        # Check if user exists in SQLite
+        c.execute('SELECT id FROM users WHERE username = ?', (username,))
+        user_exists = c.fetchone()
+        
+        if user_exists:
+            # Update existing user
+            c.execute('''UPDATE users SET name = ?, email = ?, contact_number = ?, 
+                               country = ?, profile_picture = ?, membership_status = ?
+                        WHERE username = ?''', 
+                     (profile_data.get('name'), profile_data.get('email'), 
+                      profile_data.get('contact_number'), profile_data.get('country'),
+                      profile_data.get('profile_picture'), profile_data.get('membership_status'),
+                      username))
+        else:
+            # Insert new user record
+            c.execute('''INSERT INTO users (username, name, email, contact_number, 
+                               country, profile_picture, membership_status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                     (username, profile_data.get('name'), profile_data.get('email'),
+                      profile_data.get('contact_number'), profile_data.get('country'),
+                      profile_data.get('profile_picture'), profile_data.get('membership_status')))
+        
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        logger.error(f"Error updating user profile: {str(e)}")
+        return False
+
+@app.route('/profile')
+@login_required
+def profile():
+    """Display user profile page"""
+    username = session.get('username')
+    user = get_user_profile(username)
+    
+    if not user:
+        user = {'username': username}
+    
+    return render_template('profile.html', user=user)
+
+@app.route('/update_profile', methods=['POST'])
+@login_required
+def update_profile():
+    """Update user profile information"""
+    try:
+        username = session.get('username')
+        
+        # Get form data
+        profile_data = {
+            'name': request.form.get('name', '').strip(),
+            'username': request.form.get('username', '').strip(),
+            'email': request.form.get('email', '').strip(),
+            'contact_number': request.form.get('contact_number', '').strip(),
+            'country': request.form.get('country', '').strip(),
+            'membership_status': request.form.get('membership_status', 'Standard')
+        }
+        
+        # Validate required fields
+        required_fields = ['name', 'username', 'email', 'country']
+        for field in required_fields:
+            if not profile_data[field]:
+                return render_template('profile.html', 
+                                     user=get_user_profile(username),
+                                     error_message=f'{field.replace("_", " ").title()} is required')
+        
+        # Validate email format
+        import re
+        email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        if not re.match(email_pattern, profile_data['email']):
+            return render_template('profile.html', 
+                                 user=get_user_profile(username),
+                                 error_message='Please enter a valid email address')
+        
+        # Check if username is being changed and if new username exists
+        if profile_data['username'] != username:
+            existing_user = get_user_profile(profile_data['username'])
+            if existing_user:
+                return render_template('profile.html', 
+                                     user=get_user_profile(username),
+                                     error_message='Username already exists')
+        
+        # Update profile
+        if update_user_profile(username, profile_data):
+            # Update session if username changed
+            if profile_data['username'] != username:
+                session['username'] = profile_data['username']
+            
+            return render_template('profile.html', 
+                                 user=get_user_profile(profile_data['username']),
+                                 success_message='Profile updated successfully!')
+        else:
+            return render_template('profile.html', 
+                                 user=get_user_profile(username),
+                                 error_message='Failed to update profile')
+    
+    except Exception as e:
+        logger.error(f"Profile update error: {str(e)}")
+        return render_template('profile.html', 
+                             user=get_user_profile(session.get('username')),
+                             error_message='An error occurred while updating profile')
+
+@app.route('/upload_profile_picture', methods=['POST'])
+@login_required
+def upload_profile_picture():
+    """Handle profile picture upload"""
+    try:
+        username = session.get('username')
+        
+        if 'profile_picture' not in request.files:
+            return jsonify({'success': False, 'error': 'No file uploaded'})
+        
+        file = request.files['profile_picture']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'})
+        
+        # Validate file type
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+        file_extension = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+        
+        if file_extension not in allowed_extensions:
+            return jsonify({'success': False, 'error': 'Invalid file type. Please upload an image file.'})
+        
+        # Create temporary file for processing
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_extension}') as temp_file:
+            file.save(temp_file.name)
+            temp_path = temp_file.name
+        
+        try:
+            # Resize and optimize image
+            with Image.open(temp_path) as img:
+                # Convert to RGB if necessary
+                if img.mode in ('RGBA', 'LA', 'P'):
+                    img = img.convert('RGB')
+                
+                # Resize to max 500x500 while maintaining aspect ratio
+                img.thumbnail((500, 500), Image.Resampling.LANCZOS)
+                
+                # Save optimized image
+                optimized_path = temp_path.replace(f'.{file_extension}', '_optimized.jpg')
+                img.save(optimized_path, 'JPEG', quality=85, optimize=True)
+            
+            # Upload to Cloudinary
+            cloudinary_folder = f'storage/{username}/profile'
+            result = cloudinary.uploader.upload(
+                optimized_path,
+                folder=cloudinary_folder,
+                public_id=f'profile_picture_{username}',
+                overwrite=True,
+                resource_type='image',
+                format='jpg'
+            )
+            
+            profile_picture_url = result['secure_url']
+            
+            # Update user profile with new picture URL
+            profile_data = {'profile_picture': profile_picture_url}
+            if update_user_profile(username, profile_data):
+                return jsonify({
+                    'success': True, 
+                    'profile_picture_url': profile_picture_url,
+                    'message': 'Profile picture updated successfully!'
+                })
+            else:
+                return jsonify({'success': False, 'error': 'Failed to save profile picture URL'})
+        
+        except Exception as upload_error:
+            logger.error(f"Image upload error: {str(upload_error)}")
+            return jsonify({'success': False, 'error': 'Failed to process and upload image'})
+        
+        finally:
+            # Clean up temporary files
+            try:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                if 'optimized_path' in locals() and os.path.exists(optimized_path):
+                    os.remove(optimized_path)
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to clean up temp files: {str(cleanup_error)}")
+    
+    except Exception as e:
+        logger.error(f"Profile picture upload error: {str(e)}")
+        return jsonify({'success': False, 'error': 'An error occurred while uploading the image'})
+
+@app.route('/change_password')
+@login_required
+def change_password():
+    """Display change password form"""
+    return render_template('change_password.html')
+
+@app.route('/update_password', methods=['POST'])
+@login_required
+def update_password():
+    """Update user password"""
+    try:
+        username = session.get('username')
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Validate inputs
+        if not all([current_password, new_password, confirm_password]):
+            return render_template('change_password.html', 
+                                 error='All fields are required')
+        
+        if new_password != confirm_password:
+            return render_template('change_password.html', 
+                                 error='New passwords do not match')
+        
+        if len(new_password) < 6:
+            return render_template('change_password.html', 
+                                 error='Password must be at least 6 characters long')
+        
+        # Verify current password
+        user_data = get_user_by_username(username)
+        if not user_data or not check_password_hash(user_data['password'], current_password):
+            return render_template('change_password.html', 
+                                 error='Current password is incorrect')
+        
+        # Update password in Firebase
+        new_password_hash = generate_password_hash(new_password)
+        cred_ref = db.reference(f'credentials/users/{username}')
+        cred_ref.update({'password': new_password_hash})
+        
+        # Also update in user data
+        user_ref = db.reference(f'Data/{username}')
+        user_ref.update({'password': new_password_hash})
+        
+        return render_template('change_password.html', 
+                             success='Password updated successfully!')
+    
+    except Exception as e:
+        logger.error(f"Password update error: {str(e)}")
+        return render_template('change_password.html', 
+                             error='An error occurred while updating password')
+
 # --- Run Flask App ---
 
 if __name__ == '__main__':
     init_db()  # Initialize DB once on startup
+    update_users_table()  # Update users table schema
     app.run(debug=True)

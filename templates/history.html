@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - DocShift</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+            color: white;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header Navigation */
+        nav {
+            background: transparent;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 40px;
+            box-sizing: border-box;
+            z-index: 1000;
+            overflow: visible;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            margin-right: 6px;
+            margin-top: 2px;
+        }
+
+        .brand-logo img {
+            height: 68px;
+            width: 145px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: transparent;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+
+        .nav-links {
+             margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            height: 100%;
+            position: relative;
+            z-index: 1001;
+            flex-wrap: nowrap;
+        }
+
+        .nav-links a,
+        .dropdown-toggle {
+            color: white;
+            font-weight: 500;
+            text-decoration: none;
+            font-size: 1.18rem;
+            opacity: 0.90;
+            padding: 0 14px;
+            transition: opacity 0.16s, color 0.14s;
+            cursor: pointer;
+            background: none;
+            border: none;
+            outline: none;
+            display: inline-block;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .nav-links a:hover,
+        .dropdown-toggle:hover {
+            opacity: 1;
+            color: white;
+        }
+
+        .nav-links a.active {
+            color: white;
+            opacity: 1;
+        }
+
+        .logout-link {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            border-radius: 5px;
+            padding: 0.5rem 1rem !important;
+        }
+
+        .logout-link:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: #fff;
+            min-width: 420px;
+            box-shadow: 0 14px 32px 0 rgba(40,25,67,0.13);
+            border-radius: 16px;
+            z-index: 99999;
+            padding: 14px 24px 14px 18px;
+            top: 36px;
+            left: 0;
+            user-select: none;
+            border: none;
+            grid-template-columns: repeat(2,1fr);
+            gap: 7px 17px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .dropdown:hover .dropdown-content,
+        .dropdown:focus-within .dropdown-content {
+            display: grid;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .dropdown-content a {
+            color: #14131c;
+            font-weight: 700;
+            background: #fff;
+            padding: 13px 20px 11px 16px;
+            border-radius: 11px;
+            font-size: 1.05rem;
+            transition: background 0.13s, color 0.11s;
+            text-decoration: none;
+            border: none;
+            display: block;
+            white-space: nowrap;
+            letter-spacing: 0.01em;
+            box-shadow: none;
+            margin: 0;
+            outline: none;
+            text-align: left;
+        }
+
+        .dropdown-content a:hover {
+            background: #dedcff;
+            color: #21003b;
+        }
+
+        .dropdown-get-app {
+            grid-template-columns: 1fr !important;
+            min-width: 200px !important;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #a855f7;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Search and Filter */
+        .search-filter-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-filter-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .form-input {
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #a855f7;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Custom select styling */
+        .form-input[type="date"] {
+            color-scheme: dark;
+            cursor: pointer;
+        }
+
+        .form-input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        select.form-input {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        select.form-input option {
+            background: #31004A;
+            color: white;
+            padding: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #a855f7, #3b82f6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(168, 85, 247, 0.3);
+        }
+
+        /* History Table */
+        .history-table-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .table-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .table-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem 2rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            vertical-align: middle;
+        }
+
+        .table th {
+            background: rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table td {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .status-badge {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
+            white-space: nowrap;
+        }
+
+        .status-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .file-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: white;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 2rem 0;
+            margin-top: 4rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+                height: auto;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 1rem;
+                margin-left: 0;
+            }
+
+            .dropdown-content {
+                position: static;
+                display: grid !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                grid-template-columns: 1fr;
+                min-width: auto;
+                width: 100%;
+                margin-top: 0.5rem;
+                background: rgba(255, 255, 255, 0.95);
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .search-filter-row {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .table-responsive {
+                overflow-x: auto;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.75rem 1rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Navigation -->
+    <nav>
+        <div class="brand-logo">
+            <img src="/static/logo.png" alt="DocShift Logo" draggable="false" />
+        </div>
+        <div class="nav-links" role="menubar" aria-label="Primary navigation">
+            <a href="/" role="menuitem" tabindex="0">Home</a>
+            <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+                <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+                <div class="dropdown-content" role="menu" aria-label="All Tools">
+                    <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+                    <a href="/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+                    <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+                    <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+                    <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+                    <a href="/document-screener" role="menuitem" tabindex="-1">Document Screener</a>
+                    <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+                    <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+                    <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+                    <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+                    <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+                    <a href="/word-to-pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+                    <a href="/excel-to-pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+                    <a href="/pdf-to-ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+                    <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+                    <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+                </div>
+            </div>
+            <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+                <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">Get App</a>
+                <div class="dropdown-content dropdown-get-app" role="menu" aria-label="Get App">
+                    <a href="/mobile-app" role="menuitem" tabindex="-1">Mobile App</a>
+                    <a href="/desktop-app" role="menuitem" tabindex="-1">Desktop App</a>
+                </div>
+            </div>
+            <a href="/history" class="active" role="menuitem" tabindex="0">History</a>
+            <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Conversion History</h1>
+            <p class="page-subtitle">Track and manage all your document conversions</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-number" id="total-conversions">0</div>
+                <div class="stat-label">Total Conversions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="successful-conversions">0</div>
+                <div class="stat-label">Successful</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="failed-conversions">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-size">0 MB</div>
+                <div class="stat-label">Total Size</div>
+            </div>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="search-filter-container">
+            <div class="search-filter-row">
+                <div class="form-group">
+                    <label for="search-input">Search Files</label>
+                    <input type="text" id="search-input" class="form-input" placeholder="Search by filename or type...">
+                </div>
+                <div class="form-group">
+                    <label for="status-filter">Status</label>
+                    <select id="status-filter" class="form-input">
+                        <option value="">All Status</option>
+                        <option value="success">Success</option>
+                        <option value="error">Error</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="date-filter">Date Range</label>
+                    <input type="date" id="date-filter" class="form-input">
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary" onclick="filterHistory()">
+                        <span>🔍</span> Filter
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="history-table-container">
+            <div class="table-header">
+                <div class="table-title">Recent Conversions</div>
+                <div class="table-subtitle">Your document conversion history</div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>File Details</th>
+                            <th>Conversion Type</th>
+                            <th>Date & Time</th>
+                            <th>Status</th>
+                            <th>Size</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- Content will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">📄</div>
+                <div class="empty-state-title">No conversions found</div>
+                <div>Start converting documents to see your history here</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 DocShift. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        let historyData = [];
+
+        function formatDate(dateString) {
+            // Create date object and adjust for local timezone
+            const date = new Date(dateString);
+            
+            // Check if the date string doesn't include timezone info, treat as local time
+            let adjustedDate;
+            if (dateString.includes('T') && !dateString.includes('Z') && !dateString.includes('+')) {
+                // SQLite timestamp format without timezone - treat as local time
+                adjustedDate = new Date(dateString.replace(' ', 'T'));
+            } else {
+                adjustedDate = date;
+            }
+            
+            // Format: dd/mm/yyyy
+            const day = String(adjustedDate.getDate()).padStart(2, '0');
+            const month = String(adjustedDate.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+            const year = adjustedDate.getFullYear();
+            
+            // Format time: HH:MM AM/PM (using local timezone)
+            const hours = adjustedDate.getHours();
+            const minutes = String(adjustedDate.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12; // Convert to 12-hour format
+            
+            return `${day}/${month}/${year} at ${displayHours}:${minutes} ${ampm}`;
+        }
+
+        function formatFileSize(sizeStr) {
+            return sizeStr;
+        }
+
+        function renderHistoryTable(data = historyData) {
+            const tbody = document.getElementById('history-table-body');
+            const emptyState = document.getElementById('empty-state');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            
+            tbody.innerHTML = data.map(item => {
+                // Determine if download should be available
+                const hasDownload = item.download_path && item.status === 'success';
+                const downloadButton = hasDownload ? 
+                    `<button class="btn btn-sm btn-outline" onclick="downloadFile('${item.download_path}')">
+                        📥 Download
+                    </button>` : 
+                    `<button class="btn btn-sm btn-outline" disabled style="opacity: 0.5;" title="${item.status === 'error' ? 'Conversion failed' : 'Download not available for this type'}">
+                        📥 ${item.status === 'error' ? 'Failed' : 'N/A'}
+                    </button>`;
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="file-info">
+                                <div class="file-name">${item.original_filename || 'Unknown File'}</div>
+                                <div class="file-size">${item.filename || 'N/A'}</div>
+                            </div>
+                        </td>
+                        <td>${item.conversion_type || 'Unknown'}</td>
+                        <td>${formatDate(item.timestamp)}</td>
+                        <td>
+                            <span class="status-badge status-${item.status}">
+                                ${item.status === 'success' ? '✓ Success' : '✗ Error'}
+                            </span>
+                        </td>
+                        <td>${item.file_size || 'Unknown'}</td>
+                        <td>
+                            <div class="action-buttons">
+                                ${downloadButton}
+                                <button class="btn btn-sm btn-outline" onclick="previewFile(${item.id})">
+                                    � Preview
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateStats(data = historyData) {
+            const total = data.length;
+            const successful = data.filter(item => item.status === 'success').length;
+            const failed = data.filter(item => item.status === 'error').length;
+            
+            // Calculate total size (simplified)
+            const totalSize = data.reduce((sum, item) => {
+                if (item.file_size && typeof item.file_size === 'string') {
+                    const size = parseFloat(item.file_size.replace(/[^\d.]/g, ''));
+                    return sum + (isNaN(size) ? 0 : size);
+                }
+                return sum;
+            }, 0);
+            
+            document.getElementById('total-conversions').textContent = total;
+            document.getElementById('successful-conversions').textContent = successful;
+            document.getElementById('failed-conversions').textContent = failed;
+            document.getElementById('total-size').textContent = totalSize.toFixed(1) + ' MB';
+        }
+
+        function filterHistory() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+            const dateFilter = document.getElementById('date-filter').value;
+            
+            let filteredData = historyData.filter(item => {
+                const matchesSearch = !searchTerm || 
+                    (item.original_filename && item.original_filename.toLowerCase().includes(searchTerm)) ||
+                    (item.conversion_type && item.conversion_type.toLowerCase().includes(searchTerm));
+                
+                const matchesStatus = !statusFilter || item.status === statusFilter;
+                
+                const matchesDate = !dateFilter || 
+                    new Date(item.timestamp).toDateString() === new Date(dateFilter).toDateString();
+                
+                return matchesSearch && matchesStatus && matchesDate;
+            });
+            
+            renderHistoryTable(filteredData);
+            updateStats(filteredData);
+        }
+
+        function downloadFile(downloadPath) {
+            if (downloadPath) {
+                // If it's a new format download path (starts with /download-file/)
+                if (downloadPath.startsWith('/download-file/')) {
+                    window.location.href = downloadPath;
+                } else {
+                    // Legacy format - open in new tab
+                    window.open(downloadPath, '_blank');
+                }
+            } else {
+                alert('Download not available for this conversion type');
+            }
+        }
+
+        function previewFile(id) {
+            const item = historyData.find(item => item.id === id);
+            if (item) {
+                alert(`Preview: ${item.original_filename}\nType: ${item.conversion_type}\nStatus: ${item.status}`);
+                // Implement actual preview functionality here
+            }
+        }
+
+        // Search input event listeners
+        document.getElementById('search-input').addEventListener('input', filterHistory);
+        document.getElementById('status-filter').addEventListener('change', filterHistory);
+        document.getElementById('date-filter').addEventListener('change', filterHistory);
+
+        // Function to fetch real data from server
+        async function fetchHistoryData() {
+            try {
+                const response = await fetch('/admin/logs');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.logs) {
+                        historyData = data.logs;
+                        renderHistoryTable();
+                        updateStats();
+                    } else {
+                        // Show empty state if no data
+                        renderHistoryTable([]);
+                        updateStats([]);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching history data:', error);
+                // Show empty state on error
+                renderHistoryTable([]);
+                updateStats([]);
+            }
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchHistoryData();
+        });
+    </script>
+</body>
+</html>

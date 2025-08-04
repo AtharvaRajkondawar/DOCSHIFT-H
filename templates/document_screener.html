@@ -34,6 +34,18 @@
     .nav-links a.active, .nav-links a:hover, .dropdown-toggle:focus, .dropdown-toggle:hover {opacity: 1; color: var(--white);}
     .logout-link { color: #ff4e54; font-weight: 600; border: 1.5px solid #ff4e54; background: none; border-radius: 8px; padding: 8px 18px; margin-left: 22px;}
     .logout-link:hover { background: #28102b; color: #fff;}
+
+    /* User Profile Icon */
+    .user-profile { position: relative; display: inline-block; margin-left: 10px; }
+    .profile-icon { width: 55px; height: 55px; border-radius: 50%; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; object-fit: cover; }
+    .profile-icon:hover { transform: scale(1.05); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2); }
+    .profile-dropdown { display: none; position: absolute; top: 45px; right: 0; width: 200px; height: 175px; background: #1B0039; opacity: 0.8; border-radius: 20px 0px 20px 20px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); z-index: 9999; padding: 8px 0; visibility: hidden; transform: translateY(-10px); transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease; display: flex; flex-direction: row; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; }
+    .user-profile:hover .profile-dropdown { display: flex; opacity: 0.8; visibility: visible; transform: translateY(0); }
+    .profile-dropdown::before { content: ''; position: absolute; top: -8px; right: 12px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 8px solid #1B0039; }
+    .profile-dropdown-item { display: flex; align-items: center; padding: 12px 16px; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 500; transition: background-color 0.2s ease; border-bottom: 1px solid rgba(255, 255, 255, 0.1); flex: 0 1 auto; min-width: 120px; margin: 4px; border-radius: 8px; justify-content: flex-start; text-align: left; }
+    .profile-dropdown-item:last-child { border-bottom: none; }
+    .profile-dropdown-item:hover { background-color: rgba(255, 255, 255, 0.1); }
+    .profile-dropdown-item.logout:hover { background-color: rgba(255, 107, 107, 0.1); }
     .dropdown { position: relative; display: inline-block;}
     .dropdown-toggle::after { content: '▼'; margin-left: 7px; font-size: 0.83em; color: var(--white);}
     .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after { transform: rotate(180deg);}
@@ -184,7 +196,18 @@
           <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
         </div>
       </div>
-      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+      <a href="/history" role="menuitem" tabindex="0">History</a>
+      
+      <!-- User Profile Dropdown -->
+      <div class="user-profile">
+        <img src="/static/user-profile.png" alt="User Profile" class="profile-icon" draggable="false" />
+        <div class="profile-dropdown">
+          <a href="/profile" class="profile-dropdown-item">My Profile</a>
+          <a href="/settings" class="profile-dropdown-item">Settings</a>
+          <a href="/help" class="profile-dropdown-item">Help & Support</a>
+          <a href="/logout" class="profile-dropdown-item logout">Logout</a>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -215,7 +238,6 @@
               <button type="button" id="removeFile" style="margin-left: auto; background: #DC3545; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.8em;">✕ Remove</button>
             </div>
           </div>
-          
           <div class="docscreen-btn-row">
             <button type="button" id="analyzeBtn" class="docscreen-btn btn-analyze">Analyze Document</button>
             <button type="button" id="previewBtn" class="docscreen-btn btn-preview">Preview</button>
@@ -223,11 +245,8 @@
           <div id="status" style="margin-bottom: 10px; color: #A259FF; font-weight: 500;"></div>
           <textarea id="analysisOutput" class="docscreen-outputbox" placeholder="Analysis results will appear here..."></textarea>
         </form>
-        <div class="docscreen-chattitle">Chat about Documents</div>
-        <div id="chatMessages" style="max-height: 200px; overflow-y: auto; background: #F8F6FC; border: 1.3px solid #E9E6F7; border-radius: 9px; padding: 15px; margin-bottom: 13px; min-height: 80px;">
-          <div style="color: #666; font-style: italic;">Upload and analyze a document first, then start chatting about it...</div>
-        </div>
-        <form id="chatForm" style="width:100%">
+        <form id="chatForm" style="width:100%" onsubmit="return false;">
+          <div class="docscreen-chattitle">Chat about Documents</div>
           <div class="docscreen-chatrow">
             <input type="text" id="chatInput" class="docscreen-chatinput" placeholder="Ask about the documents (e.g. who is mentioned?)"/>
           </div>
@@ -236,6 +255,9 @@
             <button type="button" id="preview2Btn" class="docscreen-btn preview2">Clear Chat</button>
           </div>
         </form>
+        <div id="chatMessages" style="max-height: 200px; overflow-y: auto; background: #FFFFFF; border: 2px solid #D4C8F0; border-radius: 12px; padding: 18px; margin-bottom: 15px; min-height: 80px; box-shadow: 0 2px 12px rgba(162, 89, 255, 0.08); margin-top: 15px;">
+          <div style="color: #8B7BA8; font-style: italic; text-align: center; padding: 20px 10px;">Upload and analyze a document first, then start chatting about it...</div>
+        </div>
       </div>
       <div class="docscreen-icon">
         <img src="/static/Frame11.png" alt="documents screener icon"/>
@@ -259,8 +281,15 @@
             // Allow enter key to send chat messages
             document.getElementById('chatInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent form submission
                     sendChatMessage();
                 }
+            });
+            
+            // Prevent form submission on chat form
+            document.getElementById('chatForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                sendChatMessage();
             });
         });
 
@@ -300,7 +329,7 @@
             
             // Reset chat
             const chatMessages = document.getElementById('chatMessages');
-            chatMessages.innerHTML = '<div style="color: #666; font-style: italic;">Upload and analyze a document first, then start chatting about it...</div>';
+            chatMessages.innerHTML = '<div style="color: #8B7BA8; font-style: italic; text-align: center; padding: 20px 10px;">Upload and analyze a document first, then start chatting about it...</div>';
         }
 
         function previewFile() {
@@ -338,10 +367,6 @@
                 status.style.color = '#FF6B35';
                 analysisOutput.value = "";
                 
-                // Clear chat when new document is analyzed
-                const chatMessages = document.getElementById('chatMessages');
-                chatMessages.innerHTML = '<div style="color: #666; font-style: italic;">Document analyzed! You can now chat about it...</div>';
-
                 const response = await fetch('/analyze_document', {
                     method: 'POST',
                     body: formData
@@ -353,6 +378,10 @@
                     analysisOutput.value = result.analysis;
                     status.innerHTML = "✅ <strong>Analysis complete!</strong>";
                     status.style.color = '#28A745';
+                    
+                    // Only show success message in chat AFTER successful analysis
+                    const chatMessages = document.getElementById('chatMessages');
+                    chatMessages.innerHTML = '<div style="color: #28A745; font-weight: 600; text-align: center; padding: 15px 10px; background: #E8F5E8; border-radius: 8px; margin-bottom: 10px;">📄 Document analyzed successfully! You can now chat about it...</div>';
                 } else {
                     analysisOutput.value = `❌ Error: ${result.error || 'Unknown error occurred.'}`;
                     status.innerHTML = "❌ <strong>Analysis failed</strong>";
@@ -383,8 +412,8 @@
 
             // Add user message
             const userMessage = document.createElement('div');
-            userMessage.style.cssText = 'margin-bottom: 10px; padding: 8px 12px; background: #E8E2F7; border-radius: 8px; border-left: 3px solid #A259FF;';
-            userMessage.innerHTML = `<strong>You:</strong> ${message}`;
+            userMessage.style.cssText = 'margin-bottom: 12px; padding: 12px 16px; background: linear-gradient(135deg, #E8E2F7, #F3EFFC); border-radius: 12px; border-left: 4px solid #A259FF; box-shadow: 0 2px 8px rgba(162, 89, 255, 0.1);';
+            userMessage.innerHTML = `<strong style="color: #6D4C8A;">You:</strong> <span style="color: #2D1B4E;">${message}</span>`;
             chatMessages.appendChild(userMessage);
             chatMessages.scrollTop = chatMessages.scrollHeight;
             chatInput.value = '';
@@ -392,8 +421,8 @@
             // Add loading message
             const loadingMessage = document.createElement('div');
             loadingMessage.id = 'loading-msg';
-            loadingMessage.style.cssText = 'margin-bottom: 10px; padding: 8px 12px; background: #F0F0F0; border-radius: 8px; color: #666; font-style: italic;';
-            loadingMessage.innerHTML = '⏳ Thinking...';
+            loadingMessage.style.cssText = 'margin-bottom: 12px; padding: 12px 16px; background: linear-gradient(135deg, #F0F8FF, #E6F3FF); border-radius: 12px; border-left: 4px solid #4A90E2; color: #2E5C8A; font-style: italic; box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);';
+            loadingMessage.innerHTML = '🤖 <strong>AI Assistant:</strong> Thinking...';
             chatMessages.appendChild(loadingMessage);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -412,14 +441,13 @@
 
                 // Add bot response
                 const botMessage = document.createElement('div');
-                botMessage.style.cssText = 'margin-bottom: 10px; padding: 8px 12px; background: #F8F6FC; border-radius: 8px; border-left: 3px solid #32005D;';
+                botMessage.style.cssText = 'margin-bottom: 12px; padding: 12px 16px; background: linear-gradient(135deg, #F0F8FF, #E6F3FF); border-radius: 12px; border-left: 4px solid #4A90E2; box-shadow: 0 2px 8px rgba(74, 144, 226, 0.1);';
                 
                 if (result.response) {
-                    botMessage.innerHTML = `<strong>AI Assistant:</strong> ${result.response}`;
+                    botMessage.innerHTML = `<strong style="color: #2E5C8A;">🤖 AI Assistant:</strong> <span style="color: #1A3B5C;">${result.response}</span>`;
                 } else {
-                    botMessage.innerHTML = `<strong>Error:</strong> ${result.error || 'Unable to process your request.'}`;
-                    botMessage.style.borderLeftColor = '#DC3545';
-                    botMessage.style.background = '#FFE6E6';
+                    botMessage.innerHTML = `<strong style="color: #DC3545;">❌ Error:</strong> <span style="color: #721C24;">${result.error || 'Unable to process your request.'}</span>`;
+                    botMessage.style.cssText = 'margin-bottom: 12px; padding: 12px 16px; background: linear-gradient(135deg, #FFE6E6, #FFCCCC); border-radius: 12px; border-left: 4px solid #DC3545; box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);';
                 }
                 
                 chatMessages.appendChild(botMessage);
@@ -431,8 +459,8 @@
                 if (loadingMsg) loadingMsg.remove();
                 
                 const errorMessage = document.createElement('div');
-                errorMessage.style.cssText = 'margin-bottom: 10px; padding: 8px 12px; background: #FFE6E6; border-radius: 8px; border-left: 3px solid #DC3545;';
-                errorMessage.innerHTML = '<strong>Error:</strong> Failed to send message. Please try again.';
+                errorMessage.style.cssText = 'margin-bottom: 12px; padding: 12px 16px; background: linear-gradient(135deg, #FFE6E6, #FFCCCC); border-radius: 12px; border-left: 4px solid #DC3545; box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);';
+                errorMessage.innerHTML = '<strong style="color: #DC3545;">❌ Error:</strong> <span style="color: #721C24;">Failed to send message. Please try again.</span>';
                 chatMessages.appendChild(errorMessage);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 console.error('Chat error:', err);
@@ -441,7 +469,7 @@
 
         function clearChat() {
             const chatMessages = document.getElementById('chatMessages');
-            chatMessages.innerHTML = '<div style="color: #666; font-style: italic;">Chat cleared. Continue asking questions about your document...</div>';
+            chatMessages.innerHTML = '<div style="color: #8B7BA8; font-style: italic; text-align: center; padding: 20px 10px; background: #F8F6FC; border-radius: 8px;">💬 Chat cleared. Continue asking questions about your document...</div>';
         }
     </script>
 </body>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Companies Management - DocShift Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+    <style>
+        :root {
+            --bg-main: #000000;
+            --tool-gradient: linear-gradient(-53deg, #31004A, #14033D);
+            --card-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            --tool-radius: 20px;
+            --card-shadow: 0 4px 24px 0 rgba(40, 25, 67, 0.14);
+            --tool-shadow-hover: 0 8px 38px 0 rgba(40, 25, 67, 0.34);
+            --white: #fff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+            font-family: 'Inter', Arial, sans-serif;
+            color: var(--white);
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-section img {
+            height: 50px;
+            width: auto;
+        }
+
+        .logo-section h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            background: var(--tool-gradient);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow);
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .logout-btn:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        /* Search and Filter */
+        .controls-section {
+            background: var(--card-gradient);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--tool-radius);
+            padding: 25px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: var(--white);
+            font-size: 15px;
+        }
+
+        .search-box::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .filter-btn {
+            background: var(--tool-gradient);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            color: var(--white);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Companies Table */
+        .companies-section {
+            background: var(--card-gradient);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--tool-radius);
+            padding: 30px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .companies-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .companies-table th,
+        .companies-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .companies-table th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            color: var(--white);
+            position: sticky;
+            top: 0;
+        }
+
+        .companies-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn-small {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-view {
+            background: var(--tool-gradient);
+            color: white;
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .btn-delete {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .action-btn-small:hover {
+            transform: translateY(-1px);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .controls-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: auto;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo-section">
+            <img src="/static/logo.png" alt="DocShift Logo">
+            <h1>Companies Management</h1>
+        </div>
+        <div class="nav-buttons">
+            <a href="/admin/dashboard" class="nav-btn">📊 Dashboard</a>
+            <a href="/register-company" class="nav-btn">➕ Add Company</a>
+            <a href="/logout" class="nav-btn logout-btn">Logout</a>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <h1 class="page-title">All Registered Companies</h1>
+
+        <!-- Search and Filter Controls -->
+        <section class="controls-section">
+            <input type="text" class="search-box" placeholder="Search companies, owners, emails..." id="searchInput">
+            <button class="filter-btn" onclick="refreshData()">🔄 Refresh</button>
+            <button class="filter-btn" onclick="exportCompanies()">📊 Export</button>
+        </section>
+
+        <!-- Companies Table -->
+        <section class="companies-section">
+            <div class="table-container">
+                <table class="companies-table">
+                    <thead>
+                        <tr>
+                            <th>Company Name</th>
+                            <th>Owner</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Username</th>
+                            <th>Status</th>
+                            <th>Registered</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="companies-table-body">
+                        <tr>
+                            <td colspan="8" class="loading">Loading companies data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let allCompanies = [];
+
+        // Load all companies data
+        async function loadCompaniesData() {
+            try {
+                const response = await fetch('/api/admin/all-companies');
+                const data = await response.json();
+                
+                allCompanies = data.companies || [];
+                updateCompaniesTable(allCompanies);
+                
+            } catch (error) {
+                console.error('Error loading companies data:', error);
+                document.getElementById('companies-table-body').innerHTML = 
+                    '<tr><td colspan="8" style="color: #ef4444;">Error loading data</td></tr>';
+            }
+        }
+
+        function updateCompaniesTable(companies) {
+            const tbody = document.getElementById('companies-table-body');
+            
+            if (companies.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="no-data">No companies found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = companies.map(company => `
+                <tr>
+                    <td><strong>${company.company_name || 'N/A'}</strong></td>
+                    <td>${company.owner_name || 'N/A'}</td>
+                    <td>${company.email || 'N/A'}</td>
+                    <td>${company.phone || 'N/A'}</td>
+                    <td><code>${company.username || 'N/A'}</code></td>
+                    <td><span class="status-badge status-active">Active</span></td>
+                    <td>${company.registered_date || 'Recent'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn-small btn-view" onclick="viewCompany('${company.username}')">👁️ View</button>
+                            <button class="action-btn-small btn-edit" onclick="editCompany('${company.username}')">✏️ Edit</button>
+                            <button class="action-btn-small btn-delete" onclick="deleteCompany('${company.username}')">🗑️ Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredCompanies = allCompanies.filter(company => {
+                return (company.company_name || '').toLowerCase().includes(searchTerm) ||
+                       (company.owner_name || '').toLowerCase().includes(searchTerm) ||
+                       (company.email || '').toLowerCase().includes(searchTerm) ||
+                       (company.username || '').toLowerCase().includes(searchTerm);
+            });
+            updateCompaniesTable(filteredCompanies);
+        });
+
+        function refreshData() {
+            loadCompaniesData();
+        }
+
+        function exportCompanies() {
+            alert('Export functionality coming soon!');
+        }
+
+        function viewCompany(username) {
+            window.location.href = `/admin/company-details?username=${username}`;
+        }
+
+        function editCompany(username) {
+            alert(`Edit company: ${username}`);
+        }
+
+        function deleteCompany(username) {
+            if (confirm(`Are you sure you want to delete company: ${username}?`)) {
+                alert('Delete functionality coming soon!');
+            }
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadCompaniesData);
+    </script>
+</body>
+</html>

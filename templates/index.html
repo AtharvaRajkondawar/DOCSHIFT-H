@@ -190,19 +190,107 @@
     text-align: center;
     }
 
-    .logout-link {
-      font-weight: 600;
-      opacity: 0.96;
-      color: var(--white);
-      text-decoration: none;
-      transition: opacity 0.18s;
-      cursor: pointer;
-      white-space: nowrap;
-      user-select: none;
-      margin-left: 0px;
-      font-size:1.18rem;
+    /* User Profile Icon */
+    .user-profile {
+      position: relative;
+      display: inline-block;
+      margin-left: 10px;
     }
-    .logout-link:hover { opacity: 1; }
+    
+    .profile-icon {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      object-fit: cover;
+    }
+    
+    .profile-icon:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Profile Dropdown */
+    .profile-dropdown {
+      display: none;
+      position: absolute;
+      top: 45px;
+      right: 0;
+      width: 200px;
+      height: 150px;
+      background: #1B0039;
+      opacity: 0.8;
+      border-radius: 20px 0px 20px 20px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      z-index: 9999;
+      padding: 8px 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      align-content: flex-start;
+    }
+    
+    .user-profile:hover .profile-dropdown {
+      display: flex;
+      opacity: 0.8;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    
+    .profile-dropdown::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      right: 12px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 8px solid #1B0039;
+    }
+    
+    .profile-dropdown-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      flex: 0 1 auto;
+      min-width: 120px;
+      margin: 4px;
+      border-radius: 8px;
+      justify-content: flex-start;
+      text-align: left;
+    }
+    
+    .profile-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    
+    .profile-dropdown-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    
+    .profile-dropdown-item.logout:hover {
+      background-color: rgba(255, 107, 107, 0.1);
+    }
+    
+    .profile-dropdown-icon {
+      margin-right: 10px;
+      font-size: 16px;
+      width: 18px;
+      text-align: center;
+    }
 
     .main-content {
       flex: 1;
@@ -297,6 +385,21 @@
       .brand-logo img {height:32px;width:54px;}
       .nav-links {gap:0.6rem; flex-wrap: wrap;}
       .nav-links a,.dropdown-toggle {font-size: .95rem;}
+      
+      .profile-icon {
+        width: 32px;
+        height: 32px;
+      }
+      
+      .profile-dropdown {
+        min-width: 160px;
+        right: -10px;
+      }
+      
+      .profile-dropdown-item {
+        padding: 10px 14px;
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -336,8 +439,30 @@
             <a href="/desktop-app" role="menuitem" tabindex="-1">Desktop App</a>
         </div>
       </div>
-      <a href="#" role="menuitem" tabindex="0">History</a>
-      <a href="/logout" class="logout-link" role="menuitem" tabindex="0">Logout</a>
+      <a href="/history" role="menuitem" tabindex="0">History</a>
+      
+      <!-- User Profile Dropdown -->
+      <div class="user-profile">
+        <img src="/static/user-profile.png" 
+              alt="User Profile" 
+              class="profile-icon" 
+              draggable="false" />
+        
+        <div class="profile-dropdown">
+          <a href="/profile" class="profile-dropdown-item">
+            My Profile
+          </a>
+          <a href="/settings" class="profile-dropdown-item">
+            Settings
+          </a>
+          <a href="/help" class="profile-dropdown-item">
+            Help & Support
+          </a>
+          <a href="/logout" class="profile-dropdown-item logout">
+            Logout
+          </a>
+        </div>
+      </div>
     </div>
   </nav>
 

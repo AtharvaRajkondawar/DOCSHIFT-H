@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Details - DocShift Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+    <style>
+        :root {
+            --bg-main: #000000;
+            --tool-gradient: linear-gradient(-53deg, #31004A, #14033D);
+            --card-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            --tool-radius: 20px;
+            --card-shadow: 0 4px 24px 0 rgba(40, 25, 67, 0.14);
+            --tool-shadow-hover: 0 8px 38px 0 rgba(40, 25, 67, 0.34);
+            --white: #fff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+            font-family: 'Inter', Arial, sans-serif;
+            color: var(--white);
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-section img {
+            height: 50px;
+            width: auto;
+        }
+
+        .logo-section h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            background: var(--tool-gradient);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow);
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Company Header */
+        .company-header {
+            background: var(--card-gradient);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--tool-radius);
+            padding: 30px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .company-info h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffffff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .company-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .status-inactive {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        .last-active {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Usage Statistics */
+        .stats-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-gradient);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--tool-radius);
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #610094, #31004A);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--tool-shadow-hover);
+        }
+
+        .stat-card.files::before {
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+        }
+
+        .stat-card.storage::before {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .stat-card.activity::before {
+            background: linear-gradient(90deg, #10b981, #059669);
+        }
+
+        .stat-card.tools::before {
+            background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+        }
+
+        .stat-number {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffffff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .stat-sublabel {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 15px;
+            opacity: 0.7;
+        }
+
+        /* Tool Usage */
+        .tools-section {
+            background: var(--card-gradient);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--tool-radius);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .tool-usage-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .tool-usage-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .tool-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .tool-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .tool-count {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--info);
+        }
+
+
+
+        /* Loading States */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .company-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .status-section {
+                align-items: flex-start;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tools-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .company-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo-section">
+            <img src="/static/logo.png" alt="DocShift Logo">
+            <h1>Company Details</h1>
+        </div>
+        <div class="nav-buttons">
+            <a href="/admin/companies" class="nav-btn back-btn">← Back to Companies</a>
+            <a href="/admin/dashboard" class="nav-btn">📊 Dashboard</a>
+            <a href="/logout" class="nav-btn" style="background: linear-gradient(135deg, #ef4444, #dc2626);">Logout</a>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Company Header -->
+        <section class="company-header">
+            <div class="company-info">
+                <h1 id="company-name">Loading...</h1>
+                <div class="company-meta">
+                    <div class="meta-item">
+                        <span>👤</span>
+                        <span id="owner-name">Loading...</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>📧</span>
+                        <span id="company-email">Loading...</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>📱</span>
+                        <span id="company-phone">Loading...</span>
+                    </div>
+                    <div class="meta-item">
+                        <span>🏷️</span>
+                        <span id="company-username">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="status-section">
+                <div class="status-badge status-active" id="company-status">
+                    ✅ Active
+                </div>
+                <div class="last-active" id="last-active">
+                    Last active: Today
+                </div>
+            </div>
+        </section>
+
+        <!-- Usage Statistics -->
+        <section class="stats-section">
+            <h2 class="section-title">📊 Usage Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card files">
+                    <div class="stat-icon">📁</div>
+                    <div class="stat-number" id="total-files">-</div>
+                    <div class="stat-label">Total Files</div>
+                    <div class="stat-sublabel">Processed & Stored</div>
+                </div>
+                <div class="stat-card storage">
+                    <div class="stat-icon">💾</div>
+                    <div class="stat-number" id="storage-used">-</div>
+                    <div class="stat-label">Storage Used</div>
+                    <div class="stat-sublabel">MB of data</div>
+                </div>
+                <div class="stat-card activity">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-number" id="monthly-activity">-</div>
+                    <div class="stat-label">Monthly Activity</div>
+                    <div class="stat-sublabel">Actions this month</div>
+                </div>
+                <div class="stat-card tools">
+                    <div class="stat-icon">🔧</div>
+                    <div class="stat-number" id="tools-used">-</div>
+                    <div class="stat-label">Tools Used</div>
+                    <div class="stat-sublabel">Different features</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tool Usage Breakdown -->
+        <section class="tools-section">
+            <h2 class="section-title">🛠️ Tool Usage Breakdown</h2>
+            <div class="tools-grid" id="tools-grid">
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Loading tool usage data...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Get company username from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const companyUsername = urlParams.get('username');
+
+        if (!companyUsername) {
+            alert('No company specified');
+            window.location.href = '/admin/companies';
+        }
+
+        // Load company details
+        async function loadCompanyDetails() {
+            try {
+                const response = await fetch(`/api/admin/company-details/${companyUsername}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Update company header
+                document.getElementById('company-name').textContent = data.company.company_name || 'Unknown Company';
+                document.getElementById('owner-name').textContent = data.company.owner_name || 'N/A';
+                document.getElementById('company-email').textContent = data.company.email || 'N/A';
+                document.getElementById('company-phone').textContent = data.company.phone || 'N/A';
+                document.getElementById('company-username').textContent = data.company.username || 'N/A';
+
+                // Update statistics
+                document.getElementById('total-files').textContent = data.stats.totalFiles || 0;
+                document.getElementById('storage-used').textContent = data.stats.storageUsed || 0;
+                document.getElementById('monthly-activity').textContent = data.stats.monthlyActivity || 0;
+                document.getElementById('tools-used').textContent = data.stats.toolsUsed || 0;
+
+                // Update tool usage
+                updateToolUsage(data.toolUsage || {});
+
+            } catch (error) {
+                console.error('Error loading company details:', error);
+                alert('Error loading company details: ' + error.message);
+            }
+        }
+
+        function updateToolUsage(toolUsage) {
+            const toolsGrid = document.getElementById('tools-grid');
+            
+            const tools = [
+                { key: 'pdf', name: 'PDF Tools', icon: '📄' },
+                { key: 'image', name: 'Image Tools', icon: '🖼️' },
+                { key: 'text', name: 'Text Tools', icon: '📝' },
+                { key: 'audio', name: 'Audio Tools', icon: '🎵' },
+                { key: 'compress', name: 'Compression', icon: '🗜️' },
+                { key: 'merge', name: 'File Merge', icon: '🔗' },
+                { key: 'split', name: 'File Split', icon: '✂️' },
+                { key: 'convert', name: 'Conversion', icon: '🔄' }
+            ];
+
+            toolsGrid.innerHTML = tools.map(tool => `
+                <div class="tool-usage-card">
+                    <div class="tool-icon">${tool.icon}</div>
+                    <div class="tool-name">${tool.name}</div>
+                    <div class="tool-count">${toolUsage[tool.key] || 0}</div>
+                </div>
+            `).join('');
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadCompanyDetails);
+    </script>
+</body>
+</html>
