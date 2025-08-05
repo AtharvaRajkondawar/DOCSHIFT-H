@@ -2705,4 +2705,4 @@ def update_password():
 if __name__ == '__main__':
     init_db()  # Initialize DB once on startup
     update_users_table()  # Update users table schema
-    app.run(debug=True)
+    app.run(host="0.0.0.0",debug=True)
