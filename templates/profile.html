@@ -115,7 +115,7 @@
       border-radius: 20px;
       box-shadow: var(--card-shadow);
       width: 100%;
-      max-width: 1000px;
+      max-width: 1200px;
       min-height: 500px;
       overflow: hidden;
     }
@@ -187,6 +187,302 @@
       cursor: not-allowed;
     }
 
+    /* Input Group for Verification */
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .input-group .form-control {
+      flex: 1;
+    }
+
+    .verification-status {
+      display: flex;
+      align-items: center;
+      min-width: 100px;
+    }
+
+    .verify-btn {
+      background: linear-gradient(135deg, #ff7b00, #ff9500);
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .verify-btn:hover {
+      background: linear-gradient(135deg, #ff9500, #ff7b00);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(255, 123, 0, 0.3);
+    }
+
+    .verify-btn:disabled {
+      background: rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.5);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .verified-badge {
+      background: linear-gradient(135deg, #28a745, #20c997);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .verified-badge::before {
+      content: '✓';
+      font-weight: bold;
+    }
+
+    /* Membership Status Container */
+    .membership-status-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .membership-status-input {
+      flex: 1;
+      position: relative;
+    }
+
+    .membership-status-input[value="Free Trail"] {
+      border-color: rgba(108, 117, 125, 0.5) !important;
+      background: rgba(108, 117, 125, 0.1) !important;
+    }
+
+    .membership-status-input[value="Standard"] {
+      border-color: rgba(255, 193, 7, 0.5) !important;
+      background: rgba(255, 193, 7, 0.1) !important;
+      color: #ffc107 !important;
+    }
+
+    .membership-status-input[value="Premium"] {
+      border-color: rgba(138, 43, 226, 0.5) !important;
+      background: rgba(138, 43, 226, 0.1) !important;
+      color: #8A2BE2 !important;
+    }
+
+    .upgrade-plan-btn {
+      background: linear-gradient(135deg, #ff7b00, #ff9500);
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+    }
+
+    .upgrade-plan-btn:hover {
+      background: linear-gradient(135deg, #ff9500, #ff7b00);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 123, 0, 0.4);
+      color: white;
+      text-decoration: none;
+    }
+
+    .upgrade-icon {
+      font-size: 1.1rem;
+      font-weight: bold;
+      transform: rotate(0deg);
+      transition: transform 0.3s ease;
+    }
+
+    .upgrade-plan-btn:hover .upgrade-icon {
+      transform: rotate(90deg);
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+      background: var(--tool-gradient);
+      margin: 10% auto;
+      padding: 0;
+      border-radius: 15px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 25px 30px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      color: var(--white);
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .close {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .close:hover {
+      color: var(--white);
+    }
+
+    .modal-body {
+      padding: 30px;
+    }
+
+    .verification-step {
+      text-align: center;
+    }
+
+    .phone-display {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--white);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .otp-input-container {
+      margin: 20px 0;
+    }
+
+    .otp-input {
+      width: 200px;
+      padding: 15px;
+      font-size: 1.5rem;
+      text-align: center;
+      letter-spacing: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: var(--white);
+      font-family: monospace;
+      transition: border-color 0.3s ease;
+    }
+
+    .otp-input:focus {
+      outline: none;
+      border-color: #8A2BE2;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .verification-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 25px;
+    }
+
+    .success-icon {
+      width: 60px;
+      height: 60px;
+      background: #28a745;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 30px;
+      color: white;
+      animation: successPop 0.5s ease-out;
+    }
+
+    @keyframes successPop {
+      0% {
+        transform: scale(0);
+      }
+      50% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .error-message {
+      background: rgba(220, 53, 69, 0.2);
+      border: 1px solid #dc3545;
+      color: #ff6b6b;
+      padding: 15px;
+      margin: 20px 30px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .info-message {
+      background: rgba(255, 193, 7, 0.2);
+      border: 1px solid #ffc107;
+      color: #ffd60a;
+    }
+
+    .loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     /* Buttons */
     .button-group {
       display: flex;
@@ -236,7 +532,7 @@
     /* Right Side - Profile Picture */
     .profile-picture-section {
       width: 350px;
-      background: rgba(0, 0, 0, 0.2);
+      background: transparent;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -255,13 +551,14 @@
       height: 150px;
       border-radius: 50%;
       object-fit: cover;
-      border: 4px solid rgba(255, 255, 255, 0.2);
+      border: 3px solid rgba(255, 255, 255, 0.3);
       transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .profile-picture:hover {
-      border-color: #8A2BE2;
-      transform: scale(1.05);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: scale(1.02);
     }
 
     .edit-overlay {
@@ -270,24 +567,61 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.6);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 15px;
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: all 0.3s ease;
       cursor: pointer;
     }
 
     .profile-picture-container:hover .edit-overlay {
       opacity: 1;
+      background: rgba(0, 0, 0, 0.7);
     }
 
-    .edit-icon {
-      color: var(--white);
-      font-size: 2rem;
-      pointer-events: none;
+    .edit-icon, .remove-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .edit-icon svg, .remove-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--white);
+      transition: all 0.3s ease;
+    }
+
+    .edit-icon:hover {
+      background: rgba(138, 43, 226, 0.8);
+      border-color: rgba(138, 43, 226, 0.8);
+      transform: scale(1.1);
+      box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+    }
+
+    .remove-icon:hover {
+      background: rgba(220, 53, 69, 0.8);
+      border-color: rgba(220, 53, 69, 0.8);
+      transform: scale(1.1);
+      box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+    }
+
+    .edit-icon:hover svg,
+    .remove-icon:hover svg {
+      stroke: var(--white);
+      transform: scale(1.1);
     }
 
     .username-display {
@@ -301,7 +635,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      background: rgba(220, 53, 69, 0.8);
+      background:linear-gradient(135deg, #8A2BE2, #9932CC);
       color: var(--white);
       border: none;
       padding: 12px 25px;
@@ -315,12 +649,14 @@
     }
 
     .sign-out-btn:hover {
-      background: rgba(220, 53, 69, 1);
+      background:linear-gradient(135deg, #8A2BE2, #9932CC);
       transform: translateY(-2px);
     }
 
     .sign-out-icon {
-      font-size: 1.2rem;
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
     }
 
     /* Hidden file input */
@@ -348,48 +684,489 @@
       color: #dc3545;
     }
 
-    /* Responsive Design */
+    /* Enhanced Responsive Design */
+    
+    /* Tablet and Medium Screens */
+    @media (max-width: 1024px) {
+      nav {
+        padding: 0 20px;
+      }
+      
+      .profile-container {
+        max-width: 95%;
+        margin: 20px auto;
+      }
+      
+      .account-details {
+        padding: 50px 40px;
+      }
+      
+      .profile-picture-section {
+        width: 320px;
+        padding: 50px 30px;
+      }
+    }
+    
+    /* Large Mobile Devices and Small Tablets */
     @media (max-width: 768px) {
+      body {
+        overflow-x: hidden;
+      }
+      
+      nav {
+        height: 60px;
+        padding: 0 15px;
+        flex-wrap: wrap;
+      }
+      
+      .brand-logo img {
+        height: 50px;
+        width: auto;
+      }
+      
+      .nav-links {
+        gap: 1rem;
+      }
+      
+      .nav-links a {
+        font-size: 1rem;
+        padding: 0 8px;
+      }
+      
+      .back-button {
+        font-size: 1rem;
+        gap: 8px;
+      }
+      
+      .back-arrow {
+        font-size: 1.2rem;
+      }
+      
+      .main-content {
+        padding: 20px 10px;
+        min-height: calc(100vh - 60px);
+      }
+      
       .profile-container {
         flex-direction: column;
         max-width: 100%;
-        margin: 20px;
+        margin: 0;
+        border-radius: 15px;
+        min-height: auto;
       }
-
-      .profile-picture-section {
-        width: 100%;
-        padding: 40px 20px;
-      }
-
-      .account-details {
-        padding: 40px 30px;
-      }
-
-      .button-group {
-        flex-direction: column;
-      }
-
-      .btn {
-        width: 100%;
-      }
-    }
-
-    @media (max-width: 480px) {
+      
       .account-details {
         padding: 30px 20px;
+        order: 2;
       }
-
+      
+      .profile-picture-section {
+        width: 100%;
+        padding: 30px 20px;
+        order: 1;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      .account-title {
+        margin-bottom: 25px;
+        justify-content: center;
+        text-align: center;
+      }
+      
       .account-title h1 {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
       }
-
+      
+      .form-group {
+        margin-bottom: 18px;
+      }
+      
+      .form-control {
+        padding: 12px 16px;
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+      
+      .input-group {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+      }
+      
+      .verification-status {
+        min-width: auto;
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .verify-btn {
+        width: 100%;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+      }
+      
+      .verified-badge {
+        justify-content: center;
+        width: 100%;
+        padding: 10px 16px;
+      }
+      
+      .membership-status-container {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+      }
+      
+      .upgrade-plan-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 20px;
+        font-size: 1rem;
+      }
+      
+      .button-group {
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 25px;
+      }
+      
+      .btn {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 1rem;
+      }
+      
       .profile-picture {
         width: 120px;
         height: 120px;
       }
-
+      
+      .username-display {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+      }
+      
+      .sign-out-btn {
+        padding: 12px 20px;
+        font-size: 1rem;
+        width: auto;
+        min-width: 150px;
+      }
+      
+      /* Modal Responsiveness */
+      .modal-content {
+        margin: 5% auto;
+        width: 95%;
+        max-width: 450px;
+      }
+      
+      .modal-header {
+        padding: 20px 25px;
+      }
+      
+      .modal-header h2 {
+        font-size: 1.3rem;
+      }
+      
+      .modal-body {
+        padding: 25px 20px;
+      }
+      
+      .otp-input {
+        width: 100%;
+        max-width: 250px;
+        font-size: 1.3rem;
+        padding: 12px;
+      }
+      
+      .verification-actions {
+        flex-direction: column;
+        gap: 12px;
+      }
+      
+      .verification-actions .btn {
+        width: 100%;
+      }
+    }
+    
+    /* Standard Mobile Devices */
+    @media (max-width: 480px) {
+      nav {
+        height: 55px;
+        padding: 0 10px;
+      }
+      
+      .brand-logo img {
+        height: 45px;
+      }
+      
+      .nav-links a {
+        font-size: 0.9rem;
+        padding: 0 6px;
+      }
+      
+      .back-button {
+        font-size: 0.9rem;
+        gap: 6px;
+      }
+      
+      .main-content {
+        padding: 15px 8px;
+        min-height: calc(100vh - 55px);
+      }
+      
+      .profile-container {
+        border-radius: 12px;
+      }
+      
+      .account-details {
+        padding: 25px 15px;
+      }
+      
+      .profile-picture-section {
+        padding: 25px 15px;
+      }
+      
+      .account-title h1 {
+        font-size: 1.4rem;
+      }
+      
+      .form-group {
+        margin-bottom: 16px;
+      }
+      
+      .form-group label {
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+      }
+      
+      .form-control {
+        padding: 11px 14px;
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+      
+      .profile-picture {
+        width: 100px;
+        height: 100px;
+      }
+      
       .username-display {
         font-size: 1.2rem;
+      }
+      
+      .sign-out-btn {
+        padding: 10px 16px;
+        font-size: 0.95rem;
+        min-width: 130px;
+      }
+      
+      .modal-content {
+        margin: 3% auto;
+        width: 98%;
+      }
+      
+      .modal-header {
+        padding: 18px 20px;
+      }
+      
+      .modal-header h2 {
+        font-size: 1.2rem;
+      }
+      
+      .modal-body {
+        padding: 20px 15px;
+      }
+      
+      .phone-display {
+        padding: 12px;
+        font-size: 1rem;
+      }
+      
+      .otp-input {
+        font-size: 1.2rem;
+        padding: 10px;
+        letter-spacing: 6px;
+      }
+    }
+    
+    /* Small Mobile Devices */
+    @media (max-width: 360px) {
+      .brand-logo img {
+        height: 40px;
+        width: auto;
+      }
+      
+      .nav-links a {
+        font-size: 0.85rem;
+      }
+      
+      .back-button {
+        font-size: 0.85rem;
+      }
+      
+      .main-content {
+        padding: 12px 5px;
+      }
+      
+      .account-details {
+        padding: 20px 12px;
+      }
+      
+      .profile-picture-section {
+        padding: 20px 12px;
+      }
+      
+      .account-title h1 {
+        font-size: 1.3rem;
+      }
+      
+      .form-control {
+        padding: 10px 12px;
+      }
+      
+      .btn {
+        padding: 12px 16px;
+        font-size: 0.95rem;
+      }
+      
+      .profile-picture {
+        width: 90px;
+        height: 90px;
+      }
+      
+      .username-display {
+        font-size: 1.1rem;
+      }
+      
+      .sign-out-btn {
+        padding: 9px 14px;
+        font-size: 0.9rem;
+        min-width: 120px;
+      }
+      
+      .modal-body {
+        padding: 18px 12px;
+      }
+      
+      .otp-input {
+        font-size: 1.1rem;
+        padding: 9px;
+        letter-spacing: 4px;
+      }
+    }
+    
+    /* Landscape Orientation Adjustments for Mobile */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .main-content {
+        padding: 10px;
+      }
+      
+      .profile-container {
+        flex-direction: row;
+        min-height: auto;
+      }
+      
+      .profile-picture-section {
+        width: 250px;
+        order: 1;
+        border-bottom: none;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      .account-details {
+        order: 2;
+        padding: 20px;
+      }
+      
+      .profile-picture {
+        width: 80px;
+        height: 80px;
+      }
+      
+      .username-display {
+        font-size: 1rem;
+        margin-bottom: 10px;
+      }
+      
+      .account-title h1 {
+        font-size: 1.3rem;
+      }
+      
+      .form-group {
+        margin-bottom: 12px;
+      }
+      
+      .button-group {
+        flex-direction: row;
+        gap: 10px;
+      }
+      
+      .btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+      }
+    }
+    
+    /* iOS Safari Specific Adjustments */
+    @supports (-webkit-touch-callout: none) {
+      .form-control {
+        font-size: 16px !important; /* Prevents zoom on iOS */
+        -webkit-appearance: none;
+      }
+      
+      select.form-control {
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+        padding-right: 40px;
+      }
+    }
+    
+    /* Android Chrome Specific Adjustments */
+    @media screen and (-webkit-min-device-pixel-ratio: 0) {
+      .form-control:focus {
+        background: rgba(0, 0, 0, 0.5) !important;
+      }
+    }
+    
+    /* High DPI/Retina Display Adjustments */
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      .profile-picture {
+        border-width: 2px;
+      }
+      
+      .edit-overlay {
+        backdrop-filter: blur(8px);
+      }
+    }
+    
+    /* Touch Device Optimizations */
+    @media (hover: none) and (pointer: coarse) {
+      .btn {
+        min-height: 44px; /* iOS recommended touch target size */
+      }
+      
+      .verify-btn {
+        min-height: 44px;
+      }
+      
+      .edit-icon, .remove-icon {
+        width: 44px;
+        height: 44px;
+      }
+      
+      .close {
+        font-size: 32px;
+        padding: 8px;
+      }
+      
+      /* Improve touch targets */
+      .nav-links a {
+        padding: 10px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
       }
     }
   </style>
@@ -414,7 +1191,6 @@
       <!-- Left Side - Account Details -->
       <div class="account-details">
         <div class="account-title">
-          <span class="back-arrow">←</span>
           <h1>Account Details</h1>
         </div>
 
@@ -484,33 +1260,59 @@
 
           <div class="form-group">
             <label for="contact_number">Contact Number :</label>
-            <input type="tel" 
-                   id="contact_number" 
-                   name="contact_number" 
-                   class="form-control" 
-                   value="{{ user.contact_number or '' }}" 
-                   placeholder="Enter your contact number">
+            <div class="input-group">
+              <input type="tel" 
+                     id="contact_number" 
+                     name="contact_number" 
+                     class="form-control" 
+                     value="{{ user.contact_number or '' }}" 
+                     placeholder="Enter your contact number">
+              <div class="verification-status" id="phoneVerificationStatus">
+                {% if user.phone_verified %}
+                <span class="verified-badge" data-verified-phone="{{ user.contact_number or '' }}">✓ Verified</span>
+                {% else %}
+                <button type="button" class="verify-btn" onclick="initiatePhoneVerification()">Verify</button>
+                {% endif %}
+              </div>
+            </div>
           </div>
 
           <div class="form-group">
             <label for="email">Email :</label>
-            <input type="email" 
-                   id="email" 
-                   name="email" 
-                   class="form-control" 
-                   value="{{ user.email or '' }}" 
-                   placeholder="Enter your email address"
-                   required>
+            <div class="input-group">
+              <input type="email" 
+                     id="email" 
+                     name="email" 
+                     class="form-control" 
+                     value="{{ user.email or '' }}" 
+                     placeholder="Enter your email address"
+                     required>
+              <div class="verification-status" id="emailVerificationStatus">
+                {% if user.email_verified %}
+                <span class="verified-badge" data-verified-email="{{ user.email or '' }}">✓ Verified</span>
+                {% else %}
+                <button type="button" class="verify-btn" onclick="initiateEmailVerification()">Verify</button>
+                {% endif %}
+              </div>
+            </div>
           </div>
 
           <div class="form-group">
             <label for="membership_status">Membership Status :</label>
-            <input type="text" 
-                   id="membership_status" 
-                   name="membership_status" 
-                   class="form-control readonly" 
-                   value="{{ user.membership_status or 'Standard' }}" 
-                   readonly>
+            <div class="membership-status-container">
+              <input type="text" 
+                     id="membership_status" 
+                     name="membership_status" 
+                     class="form-control readonly membership-status-input" 
+                     value="{{ user.membership_status or 'Standard' }}" 
+                     readonly>
+              {% if user.membership_status != 'Premium' %}
+              <a href="/upgrade-plan" class="upgrade-plan-btn">
+                <span class="upgrade-icon">⬆</span>
+                Upgrade Plan
+              </a>
+              {% endif %}
+            </div>
           </div>
 
           <div class="button-group">
@@ -527,16 +1329,26 @@
                alt="Profile Picture" 
                class="profile-picture" 
                id="profilePicture">
-          <div class="edit-overlay" onclick="document.getElementById('profileImageInput').click()">
-            <span class="edit-icon">✏️</span>
+          <div class="edit-overlay">
+            <div class="edit-icon" onclick="triggerFileInput()">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 20h9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="remove-icon" onclick="removeProfilePicture()">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 7L18.1327 19.1425C18.0579 20.1891 17.187 21 16.1378 21H7.86224C6.81296 21 5.94208 20.1891 5.86732 19.1425L5 7M10 11V17M14 11V17M15 7V4C15 3.44772 14.5523 3 14 3H10C9.44772 3 9 3.44772 9 4V7M4 7H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
           </div>
         </div>
         
         <div class="username-display">{{ user.username or 'Username' }}</div>
         
         <a href="/logout" class="sign-out-btn">
-          <span class="sign-out-icon">🚪</span>
           Sign out
+          <img src="/static/sign-out.png" alt="Sign out" class="sign-out-icon">
         </a>
 
         <!-- Hidden file input for profile picture upload -->
@@ -548,10 +1360,131 @@
     </div>
   </div>
 
+  <!-- Phone Verification Modal -->
+  <div id="phoneVerificationModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Verify Phone Number</h2>
+        <span class="close" onclick="closeVerificationModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div id="sendOtpStep" class="verification-step">
+          <p>We'll send a verification code to:</p>
+          <div class="phone-display">
+            <span id="displayPhoneNumber"></span>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="sendOTP()">
+            <span id="sendOtpText">Send Verification Code</span>
+            <div id="sendOtpLoading" class="loading-spinner" style="display: none;"></div>
+          </button>
+        </div>
+        
+        <div id="verifyOtpStep" class="verification-step" style="display: none;">
+          <p>Enter the 6-digit code sent to your phone:</p>
+          <div class="otp-input-container">
+            <input type="text" id="otpInput" maxlength="6" placeholder="000000" class="otp-input">
+          </div>
+          <div class="verification-actions">
+            <button type="button" class="btn btn-primary" onclick="verifyOTP()">
+              <span id="verifyOtpText">Verify Code</span>
+              <div id="verifyOtpLoading" class="loading-spinner" style="display: none;"></div>
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="resendOTP()">Resend Code</button>
+          </div>
+        </div>
+        
+        <div id="verificationSuccess" class="verification-step" style="display: none;">
+          <div class="success-icon">✓</div>
+          <h3>Phone Verified!</h3>
+          <p>Your phone number has been successfully verified.</p>
+          <button type="button" class="btn btn-primary" onclick="closeVerificationModal()">Continue</button>
+        </div>
+      </div>
+      <div id="verificationError" class="error-message" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Email Verification Modal -->
+  <div id="emailVerificationModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Verify Email Address</h2>
+        <span class="close" onclick="closeEmailVerificationModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div id="sendEmailOtpStep" class="verification-step">
+          <p>We'll send a verification code to:</p>
+          <div class="phone-display">
+            <span id="displayEmailAddress"></span>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="sendEmailOTP()">
+            <span id="sendEmailOtpText">Send Verification Code</span>
+            <div id="sendEmailOtpLoading" class="loading-spinner" style="display: none;"></div>
+          </button>
+        </div>
+        
+        <div id="verifyEmailOtpStep" class="verification-step" style="display: none;">
+          <p>Enter the 6-digit code sent to your email:</p>
+          <div class="otp-input-container">
+            <input type="text" id="emailOtpInput" maxlength="6" placeholder="000000" class="otp-input">
+          </div>
+          <div class="verification-actions">
+            <button type="button" class="btn btn-primary" onclick="verifyEmailOTP()">
+              <span id="verifyEmailOtpText">Verify Code</span>
+              <div id="verifyEmailOtpLoading" class="loading-spinner" style="display: none;"></div>
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="resendEmailOTP()">Resend Code</button>
+          </div>
+        </div>
+        
+        <div id="emailVerificationSuccess" class="verification-step" style="display: none;">
+          <div class="success-icon">✓</div>
+          <h3>Email Verified!</h3>
+          <p>Your email address has been successfully verified.</p>
+          <button type="button" class="btn btn-primary" onclick="closeEmailVerificationModal()">Continue</button>
+        </div>
+      </div>
+      <div id="emailVerificationError" class="error-message" style="display: none;"></div>
+    </div>
+  </div>
+
   <script>
+    function triggerFileInput() {
+      console.log('Triggering file input...'); // Debug log
+      document.getElementById('profileImageInput').click();
+    }
+
+    function removeProfilePicture() {
+      if (confirm('Are you sure you want to remove your profile picture?')) {
+        fetch('/remove_profile_picture', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            const profilePicture = document.getElementById('profilePicture');
+            profilePicture.src = '/static/user-profile.png';
+            showMessage('Profile picture removed successfully!', 'success');
+          } else {
+            showMessage(data.error || 'Failed to remove profile picture.', 'error');
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showMessage('An error occurred while removing the image.', 'error');
+        });
+      }
+    }
+
     function uploadProfilePicture(input) {
+      console.log('Upload function called'); // Debug log
+      
       if (input.files && input.files[0]) {
         const file = input.files[0];
+        console.log('File selected:', file.name, file.type, file.size); // Debug log
         
         // Validate file type
         if (!file.type.startsWith('image/')) {
@@ -567,6 +1500,8 @@
 
         const formData = new FormData();
         formData.append('profile_picture', file);
+        
+        console.log('Sending upload request...'); // Debug log
 
         // Show loading state
         const profilePicture = document.getElementById('profilePicture');
@@ -576,6 +1511,7 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           profilePicture.src = e.target.result;
+          console.log('Preview loaded'); // Debug log
         };
         reader.readAsDataURL(file);
 
@@ -584,8 +1520,12 @@
           method: 'POST',
           body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+          console.log('Response status:', response.status); // Debug log
+          return response.json();
+        })
         .then(data => {
+          console.log('Response data:', data); // Debug log
           if (data.success) {
             profilePicture.src = data.profile_picture_url;
             showMessage('Profile picture updated successfully!', 'success');
@@ -595,10 +1535,12 @@
           }
         })
         .catch(error => {
-          console.error('Error:', error);
+          console.error('Upload error:', error);
           profilePicture.src = originalSrc;
           showMessage('An error occurred while uploading the image.', 'error');
         });
+      } else {
+        console.log('No file selected'); // Debug log
       }
     }
 
@@ -655,6 +1597,625 @@
         this.style.borderColor = 'rgba(255, 255, 255, 0.2)';
       }
     });
+
+    // Phone Verification Functions
+    function initiatePhoneVerification() {
+      const phoneNumber = document.getElementById('contact_number').value.trim();
+      
+      if (!phoneNumber) {
+        showMessage('Please enter a phone number first.', 'error');
+        return;
+      }
+      
+      // Validate phone number format (basic validation)
+      const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+      if (cleanPhone.length < 10) {
+        showMessage('Please enter a valid phone number.', 'error');
+        return;
+      }
+      
+      // Show modal and display phone number
+      document.getElementById('displayPhoneNumber').textContent = phoneNumber;
+      document.getElementById('phoneVerificationModal').style.display = 'block';
+      
+      // Reset modal to first step
+      showVerificationStep('sendOtpStep');
+    }
+
+    function closeVerificationModal() {
+      document.getElementById('phoneVerificationModal').style.display = 'none';
+      // Reset form
+      document.getElementById('otpInput').value = '';
+      hideError();
+      showVerificationStep('sendOtpStep');
+    }
+
+    function showVerificationStep(stepId) {
+      const steps = ['sendOtpStep', 'verifyOtpStep', 'verificationSuccess'];
+      steps.forEach(step => {
+        document.getElementById(step).style.display = step === stepId ? 'block' : 'none';
+      });
+    }
+
+    function sendOTP() {
+      const phoneNumber = document.getElementById('contact_number').value.trim();
+      const sendBtn = document.querySelector('#sendOtpStep .btn');
+      const sendText = document.getElementById('sendOtpText');
+      const sendLoading = document.getElementById('sendOtpLoading');
+      
+      // Show loading state
+      sendBtn.disabled = true;
+      sendText.style.display = 'none';
+      sendLoading.style.display = 'inline-block';
+      
+      fetch('/send_phone_otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        sendBtn.disabled = false;
+        sendText.style.display = 'inline';
+        sendLoading.style.display = 'none';
+        
+        if (data.success) {
+          showVerificationStep('verifyOtpStep');
+          hideError();
+          
+          // For development mode, show OTP
+          if (data.dev_otp) {
+            showError(`Development Mode: Your OTP is ${data.dev_otp}`, 'info');
+          }
+        } else {
+          showError(data.error || 'Failed to send OTP');
+        }
+      })
+      .catch(error => {
+        sendBtn.disabled = false;
+        sendText.style.display = 'inline';
+        sendLoading.style.display = 'none';
+        showError('Network error. Please try again.');
+      });
+    }
+
+    function verifyOTP() {
+      const phoneNumber = document.getElementById('contact_number').value.trim();
+      const otpCode = document.getElementById('otpInput').value.trim();
+      const verifyBtn = document.querySelector('#verifyOtpStep .btn-primary');
+      const verifyText = document.getElementById('verifyOtpText');
+      const verifyLoading = document.getElementById('verifyOtpLoading');
+      
+      if (!otpCode || otpCode.length !== 6) {
+        showError('Please enter a valid 6-digit code');
+        return;
+      }
+      
+      // Show loading state
+      verifyBtn.disabled = true;
+      verifyText.style.display = 'none';
+      verifyLoading.style.display = 'inline-block';
+      
+      fetch('/verify_phone_otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          otp_code: otpCode
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        verifyBtn.disabled = false;
+        verifyText.style.display = 'inline';
+        verifyLoading.style.display = 'none';
+        
+        if (data.success) {
+          showVerificationStep('verificationSuccess');
+          hideError();
+          
+          // Update verification status in the form
+          setTimeout(() => {
+            const verifiedPhoneNumber = document.getElementById('contact_number').value.trim();
+            updatePhoneVerificationUI(true, verifiedPhoneNumber);
+            
+            // Update the global verified phone number reference
+            updateVerifiedPhoneReference(verifiedPhoneNumber);
+            
+            closeVerificationModal();
+            
+            // Show success message
+            showMessage('Phone number verified successfully!', 'success');
+          }, 2000);
+        } else {
+          showError(data.error || 'Invalid verification code');
+        }
+      })
+      .catch(error => {
+        verifyBtn.disabled = false;
+        verifyText.style.display = 'inline';
+        verifyLoading.style.display = 'none';
+        showError('Network error. Please try again.');
+      });
+    }
+
+    function resendOTP() {
+      // Simply call sendOTP again and go back to verify step
+      const phoneNumber = document.getElementById('contact_number').value.trim();
+      
+      fetch('/send_phone_otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          hideError();
+          showMessage('New code sent successfully!', 'success');
+          
+          // For development mode, show OTP
+          if (data.dev_otp) {
+            showError(`Development Mode: Your new OTP is ${data.dev_otp}`, 'info');
+          }
+        } else {
+          showError(data.error || 'Failed to resend OTP');
+        }
+      })
+      .catch(error => {
+        showError('Network error. Please try again.');
+      });
+    }
+
+    // Email Verification Functions
+    function initiateEmailVerification() {
+      const emailAddress = document.getElementById('email').value.trim();
+      
+      if (!emailAddress) {
+        showEmailError('Please enter an email address first.', 'error');
+        return;
+      }
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailAddress)) {
+        showEmailError('Please enter a valid email address.', 'error');
+        return;
+      }
+      
+      // Show modal and display email address
+      document.getElementById('displayEmailAddress').textContent = emailAddress;
+      document.getElementById('emailVerificationModal').style.display = 'block';
+      
+      // Reset modal to first step
+      showEmailVerificationStep('sendEmailOtpStep');
+    }
+
+    function closeEmailVerificationModal() {
+      document.getElementById('emailVerificationModal').style.display = 'none';
+      // Reset form
+      document.getElementById('emailOtpInput').value = '';
+      hideEmailError();
+      showEmailVerificationStep('sendEmailOtpStep');
+    }
+
+    function showEmailVerificationStep(stepId) {
+      const steps = ['sendEmailOtpStep', 'verifyEmailOtpStep', 'emailVerificationSuccess'];
+      steps.forEach(step => {
+        document.getElementById(step).style.display = step === stepId ? 'block' : 'none';
+      });
+    }
+
+    function sendEmailOTP() {
+      const emailAddress = document.getElementById('email').value.trim();
+      const sendBtn = document.querySelector('#sendEmailOtpStep .btn');
+      const sendText = document.getElementById('sendEmailOtpText');
+      const sendLoading = document.getElementById('sendEmailOtpLoading');
+      
+      // Show loading state
+      sendBtn.disabled = true;
+      sendText.style.display = 'none';
+      sendLoading.style.display = 'inline-block';
+      
+      fetch('/send_email_otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: emailAddress
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        sendBtn.disabled = false;
+        sendText.style.display = 'inline';
+        sendLoading.style.display = 'none';
+        
+        if (data.success) {
+          showEmailVerificationStep('verifyEmailOtpStep');
+          hideEmailError();
+          
+          // For development mode, show OTP
+          if (data.dev_otp) {
+            showEmailError(`Development Mode: Your OTP is ${data.dev_otp}`, 'info');
+          }
+        } else {
+          showEmailError(data.error || 'Failed to send OTP');
+        }
+      })
+      .catch(error => {
+        sendBtn.disabled = false;
+        sendText.style.display = 'inline';
+        sendLoading.style.display = 'none';
+        showEmailError('Network error. Please try again.');
+      });
+    }
+
+    function verifyEmailOTP() {
+      const emailAddress = document.getElementById('email').value.trim();
+      const otpCode = document.getElementById('emailOtpInput').value.trim();
+      const verifyBtn = document.querySelector('#verifyEmailOtpStep .btn-primary');
+      const verifyText = document.getElementById('verifyEmailOtpText');
+      const verifyLoading = document.getElementById('verifyEmailOtpLoading');
+      
+      if (!otpCode || otpCode.length !== 6) {
+        showEmailError('Please enter a valid 6-digit code');
+        return;
+      }
+      
+      // Show loading state
+      verifyBtn.disabled = true;
+      verifyText.style.display = 'none';
+      verifyLoading.style.display = 'inline-block';
+      
+      fetch('/verify_email_otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: emailAddress,
+          otp_code: otpCode
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        verifyBtn.disabled = false;
+        verifyText.style.display = 'inline';
+        verifyLoading.style.display = 'none';
+        
+        if (data.success) {
+          showEmailVerificationStep('emailVerificationSuccess');
+          hideEmailError();
+          
+          // Update verification status in the form
+          setTimeout(() => {
+            const verifiedEmailAddress = document.getElementById('email').value.trim();
+            updateEmailVerificationUI(true, verifiedEmailAddress);
+            
+            // Update the global verified email reference
+            updateVerifiedEmailReference(verifiedEmailAddress);
+            
+            closeEmailVerificationModal();
+            
+            // Show success message
+            showMessage('Email address verified successfully!', 'success');
+          }, 2000);
+        } else {
+          showEmailError(data.error || 'Invalid verification code');
+        }
+      })
+      .catch(error => {
+        verifyBtn.disabled = false;
+        verifyText.style.display = 'inline';
+        verifyLoading.style.display = 'none';
+        showEmailError('Network error. Please try again.');
+      });
+    }
+
+    function resendEmailOTP() {
+      // Simply call sendEmailOTP again and go back to verify step
+      const emailAddress = document.getElementById('email').value.trim();
+      
+      fetch('/send_email_otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: emailAddress
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          hideEmailError();
+          showMessage('New code sent successfully!', 'success');
+          
+          // For development mode, show OTP
+          if (data.dev_otp) {
+            showEmailError(`Development Mode: Your new OTP is ${data.dev_otp}`, 'info');
+          }
+        } else {
+          showEmailError(data.error || 'Failed to resend OTP');
+        }
+      })
+      .catch(error => {
+        showEmailError('Network error. Please try again.');
+      });
+    }
+
+    function updateEmailVerificationUI(verified, verifiedEmail = '') {
+      const verificationStatus = document.getElementById('emailVerificationStatus');
+      if (verified) {
+        verificationStatus.innerHTML = `<span class="verified-badge" data-verified-email="${verifiedEmail}">Verified</span>`;
+      } else {
+        verificationStatus.innerHTML = '<button type="button" class="verify-btn" onclick="initiateEmailVerification()">Verify</button>';
+      }
+    }
+
+    // Global variable to track verified email
+    let globalVerifiedEmailAddress = '';
+
+    function updateVerifiedEmailReference(emailAddress) {
+      globalVerifiedEmailAddress = emailAddress;
+    }
+
+    function getVerifiedEmailAddress() {
+      return globalVerifiedEmailAddress;
+    }
+
+    function showEmailError(message, type = 'error') {
+      const errorDiv = document.getElementById('emailVerificationError');
+      errorDiv.textContent = message;
+      errorDiv.className = type === 'info' ? 'error-message info-message' : 'error-message';
+      errorDiv.style.display = 'block';
+    }
+
+    function hideEmailError() {
+      document.getElementById('emailVerificationError').style.display = 'none';
+    }
+
+    function updatePhoneVerificationUI(verified, verifiedPhone = '') {
+      const verificationStatus = document.getElementById('phoneVerificationStatus');
+      if (verified) {
+        verificationStatus.innerHTML = `<span class="verified-badge" data-verified-phone="${verifiedPhone}">Verified</span>`;
+      } else {
+        verificationStatus.innerHTML = '<button type="button" class="verify-btn" onclick="initiatePhoneVerification()">Verify</button>';
+      }
+    }
+
+    // Global variable to track verified phone number
+    let globalVerifiedPhoneNumber = '';
+
+    function updateVerifiedPhoneReference(phoneNumber) {
+      globalVerifiedPhoneNumber = phoneNumber;
+    }
+
+    function getVerifiedPhoneNumber() {
+      return globalVerifiedPhoneNumber;
+    }
+
+    function showError(message, type = 'error') {
+      const errorDiv = document.getElementById('verificationError');
+      errorDiv.textContent = message;
+      errorDiv.className = type === 'info' ? 'error-message info-message' : 'error-message';
+      errorDiv.style.display = 'block';
+    }
+
+    function hideError() {
+      document.getElementById('verificationError').style.display = 'none';
+    }
+
+    // Auto-format OTP input
+    document.addEventListener('DOMContentLoaded', function() {
+      const otpInput = document.getElementById('otpInput');
+      if (otpInput) {
+        otpInput.addEventListener('input', function(e) {
+          let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+          e.target.value = value;
+          
+          // Auto-verify when 6 digits are entered
+          if (value.length === 6) {
+            setTimeout(() => {
+              verifyOTP();
+            }, 500);
+          }
+        });
+      }
+
+      // Monitor phone number changes
+      const phoneInput = document.getElementById('contact_number');
+      const verificationStatus = document.getElementById('phoneVerificationStatus');
+      const verifiedBadge = verificationStatus.querySelector('.verified-badge');
+      
+      // Initialize the global verified phone number
+      if (verifiedBadge) {
+        globalVerifiedPhoneNumber = verifiedBadge.getAttribute('data-verified-phone') || '';
+      }
+      
+      phoneInput.addEventListener('input', function() {
+        const currentPhoneNumber = this.value.trim();
+        
+        // If phone number changed from the verified one, reset verification status
+        if (currentPhoneNumber !== globalVerifiedPhoneNumber) {
+          updatePhoneVerificationUI(false);
+          
+          // Show warning if there was a verified number before
+          if (globalVerifiedPhoneNumber !== '' && currentPhoneNumber !== '') {
+            showMessage('Phone number changed. Please verify your new number.', 'error');
+          }
+        }
+        // If phone number matches the verified one, show verified status
+        else if (currentPhoneNumber === globalVerifiedPhoneNumber && globalVerifiedPhoneNumber !== '') {
+          updatePhoneVerificationUI(true, globalVerifiedPhoneNumber);
+        }
+      });
+
+      // Also monitor on blur to catch paste operations
+      phoneInput.addEventListener('blur', function() {
+        const currentPhoneNumber = this.value.trim();
+        
+        if (currentPhoneNumber !== globalVerifiedPhoneNumber) {
+          updatePhoneVerificationUI(false);
+          
+          // Show warning if there was a verified number before
+          if (globalVerifiedPhoneNumber !== '' && currentPhoneNumber !== '') {
+            showMessage('Phone number changed. Please verify your new number.', 'error');
+          }
+        }
+        else if (currentPhoneNumber === globalVerifiedPhoneNumber && globalVerifiedPhoneNumber !== '') {
+          updatePhoneVerificationUI(true, globalVerifiedPhoneNumber);
+        }
+      });
+
+      // Auto-format email OTP input
+      const emailOtpInput = document.getElementById('emailOtpInput');
+      if (emailOtpInput) {
+        emailOtpInput.addEventListener('input', function(e) {
+          let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+          e.target.value = value;
+          
+          // Auto-verify when 6 digits are entered
+          if (value.length === 6) {
+            setTimeout(() => {
+              verifyEmailOTP();
+            }, 500);
+          }
+        });
+      }
+
+      // Monitor email address changes
+      const emailInput = document.getElementById('email');
+      const emailVerificationStatus = document.getElementById('emailVerificationStatus');
+      const emailVerifiedBadge = emailVerificationStatus.querySelector('.verified-badge');
+      
+      // Initialize the global verified email address
+      if (emailVerifiedBadge) {
+        globalVerifiedEmailAddress = emailVerifiedBadge.getAttribute('data-verified-email') || '';
+      }
+      
+      emailInput.addEventListener('input', function() {
+        const currentEmailAddress = this.value.trim();
+        
+        // If email address changed from the verified one, reset verification status
+        if (currentEmailAddress !== globalVerifiedEmailAddress) {
+          updateEmailVerificationUI(false);
+          
+          // Show warning if there was a verified email before
+          if (globalVerifiedEmailAddress !== '' && currentEmailAddress !== '') {
+            showMessage('Email address changed. Please verify your new email.', 'error');
+          }
+        }
+        // If email address matches the verified one, show verified status
+        else if (currentEmailAddress === globalVerifiedEmailAddress && globalVerifiedEmailAddress !== '') {
+          updateEmailVerificationUI(true, globalVerifiedEmailAddress);
+        }
+      });
+
+      // Also monitor email on blur to catch paste operations
+      emailInput.addEventListener('blur', function() {
+        const currentEmailAddress = this.value.trim();
+        
+        if (currentEmailAddress !== globalVerifiedEmailAddress) {
+          updateEmailVerificationUI(false);
+          
+          // Show warning if there was a verified email before
+          if (globalVerifiedEmailAddress !== '' && currentEmailAddress !== '') {
+            showMessage('Email address changed. Please verify your new email.', 'error');
+          }
+        }
+        else if (currentEmailAddress === globalVerifiedEmailAddress && globalVerifiedEmailAddress !== '') {
+          updateEmailVerificationUI(true, globalVerifiedEmailAddress);
+        }
+      });
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+      const modal = document.getElementById('phoneVerificationModal');
+      const emailModal = document.getElementById('emailVerificationModal');
+      if (event.target === modal) {
+        closeVerificationModal();
+      }
+      if (event.target === emailModal) {
+        closeEmailVerificationModal();
+      }
+    });
+
+    // Check for plan upgrade success message from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('plan_upgraded') === 'true') {
+      const planName = urlParams.get('plan_name');
+      if (planName) {
+        showMessage(`Successfully upgraded to ${planName} plan!`, 'success');
+        
+        // Update the membership status input
+        const membershipInput = document.getElementById('membership_status');
+        if (membershipInput) {
+          membershipInput.value = planName;
+          
+          // Remove upgrade button if user upgraded to Premium
+          if (planName === 'Premium') {
+            const upgradeBtn = document.querySelector('.upgrade-plan-btn');
+            if (upgradeBtn) {
+              upgradeBtn.remove();
+            }
+          }
+        }
+        
+        // Clean up URL parameters
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+
+    // Apply membership status colors on page load
+    function applyMembershipColors() {
+      const membershipInput = document.getElementById('membership_status');
+      if (membershipInput) {
+        const plan = membershipInput.value;
+        membershipInput.setAttribute('value', plan);
+        
+        // Add visual indicator next to plan name
+        if (!membershipInput.nextElementSibling || !membershipInput.nextElementSibling.classList.contains('plan-indicator')) {
+          const indicator = document.createElement('span');
+          indicator.className = 'plan-indicator';
+          indicator.style.marginLeft = '10px';
+          indicator.style.fontSize = '1.2em';
+          
+          switch(plan) {
+            case 'Free Trail':
+              indicator.textContent = '🆓';
+              indicator.title = 'Free Trail Plan';
+              break;
+            case 'Standard':
+              indicator.textContent = '⭐';
+              indicator.title = 'Standard Plan';
+              break;
+            case 'Premium':
+              indicator.textContent = '💎';
+              indicator.title = 'Premium Plan';
+              break;
+          }
+          
+          membershipInput.parentNode.appendChild(indicator);
+        }
+      }
+    }
+
+    // Apply colors when page loads
+    applyMembershipColors();
   </script>
 </body>
 </html>

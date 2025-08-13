@@ -157,9 +157,11 @@
         }
 
         .stat-icon {
-            font-size: 24px;
+            width: 32px;
+            height: 32px;
             margin-bottom: 15px;
-            opacity: 0.7;
+            opacity: 0.8;
+            filter: brightness(1.2);
         }
 
         /* Action Buttons */
@@ -194,6 +196,12 @@
             font-weight: 600;
             transition: all 0.3s ease;
             cursor: pointer;
+        }
+
+        .action-btn img {
+            width: 24px;
+            height: 24px;
+            filter: brightness(1.2);
         }
 
         .action-btn:hover {
@@ -291,7 +299,6 @@
     <header class="header">
         <div class="logo-section">
             <img src="/static/logo.png" alt="DocShift Logo">
-            <h1>DocShift Admin</h1>
         </div>
         <div class="admin-info">
             <div class="admin-badge">
@@ -307,22 +314,22 @@
         <!-- Statistics Cards -->
         <section class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon">🏢</div>
+                <img src="/admin/total Companies.png" alt="Total Companies" class="stat-icon" />
                 <div class="stat-number" id="total-companies">-</div>
                 <div class="stat-label">Total Companies</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">✅</div>
+                <img src="/admin/Active Companies.png" alt="Active Companies" class="stat-icon" />
                 <div class="stat-number" id="active-companies">-</div>
                 <div class="stat-label">Active Companies</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">📊</div>
+                <img src="/admin/Total Users.png" alt="Total Users" class="stat-icon" />
                 <div class="stat-number" id="total-users">-</div>
                 <div class="stat-label">Total Users</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">📁</div>
+                <img src="/admin/Files Processed.png" alt="Files Processed" class="stat-icon" />
                 <div class="stat-number" id="total-files">-</div>
                 <div class="stat-label">Files Processed</div>
             </div>
@@ -333,13 +340,16 @@
             <h2 class="section-title">Quick Actions</h2>
             <div class="actions-grid">
                 <button class="action-btn" onclick="refreshData()">
-                    🔄 Refresh Data
+                    <img src="/admin/Refresh data.png" alt="Refresh" />
+                    Refresh Data
                 </button>
                 <a href="/admin/companies" class="action-btn">
-                    📋 View All Companies
+                    <img src="/admin/View all companies.png" alt="View Companies" />
+                    View All Companies
                 </a>
                 <button class="action-btn" onclick="exportData()">
-                    📊 Export Reports
+                    <img src="/admin/Export Reports.png" alt="Export" />
+                    Export Reports
                 </button>
                 <a href="/register-company" class="action-btn">
                     ➕ Add New Company
@@ -422,9 +432,514 @@
         }
 
         function exportData() {
-            // This would trigger an export function
-            alert('Export functionality coming soon!');
+            // Show export modal
+            showExportModal();
         }
+        
+        function showExportModal() {
+            // Create modal overlay
+            const modal = document.createElement('div');
+            modal.id = 'exportModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                backdrop-filter: blur(5px);
+            `;
+            
+            // Create modal content
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: linear-gradient(-53deg, #31004A, #14033D);
+                padding: 30px;
+                border-radius: 20px;
+                max-width: 600px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                color: white;
+                font-family: 'Inter', Arial, sans-serif;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            `;
+            
+            modalContent.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                    <h2 style="color: #8B5CF6; font-size: 1.5rem; margin: 0;">📊 Export Reports</h2>
+                    <button onclick="closeExportModal()" style="
+                        background: none;
+                        border: none;
+                        color: white;
+                        font-size: 24px;
+                        cursor: pointer;
+                        opacity: 0.7;
+                        transition: opacity 0.2s;
+                    " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">&times;</button>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #ffffff; margin-bottom: 15px; font-size: 1.1rem;">📈 Select Report Type:</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="export-option" onclick="selectExportType('users')" style="
+                            background: rgba(255, 255, 255, 0.1);
+                            padding: 15px;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            border: 2px solid transparent;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <div style="font-weight: 600; margin-bottom: 5px;">👥 Users Report</div>
+                            <div style="font-size: 0.9rem; opacity: 0.8;">All registered users data</div>
+                        </div>
+                        
+                        <div class="export-option" onclick="selectExportType('companies')" style="
+                            background: rgba(255, 255, 255, 0.1);
+                            padding: 15px;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            border: 2px solid transparent;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <div style="font-weight: 600; margin-bottom: 5px;">🏢 Companies Report</div>
+                            <div style="font-size: 0.9rem; opacity: 0.8;">Company registrations & data</div>
+                        </div>
+                        
+                        <div class="export-option" onclick="selectExportType('plans')" style="
+                            background: rgba(255, 255, 255, 0.1);
+                            padding: 15px;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            border: 2px solid transparent;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <div style="font-weight: 600; margin-bottom: 5px;">💎 Plans & Subscriptions</div>
+                            <div style="font-size: 0.9rem; opacity: 0.8;">User plans & revenue data</div>
+                        </div>
+                        
+                        <div class="export-option" onclick="selectExportType('usage')" style="
+                            background: rgba(255, 255, 255, 0.1);
+                            padding: 15px;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            border: 2px solid transparent;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <div style="font-weight: 600; margin-bottom: 5px;">📊 Usage Analytics</div>
+                            <div style="font-size: 0.9rem; opacity: 0.8;">Tool usage & activity stats</div>
+                        </div>
+                        
+                        <div class="export-option" onclick="selectExportType('financial')" style="
+                            background: rgba(255, 255, 255, 0.1);
+                            padding: 15px;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            border: 2px solid transparent;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <div style="font-weight: 600; margin-bottom: 5px;">💰 Financial Report</div>
+                            <div style="font-size: 0.9rem; opacity: 0.8;">Revenue & payment analysis</div>
+                        </div>
+                        
+                        <div class="export-option" onclick="selectExportType('comprehensive')" style="
+                            background: rgba(255, 255, 255, 0.1);
+                            padding: 15px;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            border: 2px solid transparent;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <div style="font-weight: 600; margin-bottom: 5px;">📋 Comprehensive Report</div>
+                            <div style="font-size: 0.9rem; opacity: 0.8;">All data combined</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #ffffff; margin-bottom: 15px; font-size: 1.1rem;">📅 Date Range:</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; opacity: 0.9;">From Date:</label>
+                            <input type="date" id="exportFromDate" style="
+                                width: 100%;
+                                padding: 10px;
+                                border-radius: 8px;
+                                border: 1px solid rgba(255, 255, 255, 0.2);
+                                background: rgba(0, 0, 0, 0.3);
+                                color: white;
+                                font-family: 'Inter', Arial, sans-serif;
+                            " />
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; opacity: 0.9;">To Date:</label>
+                            <input type="date" id="exportToDate" style="
+                                width: 100%;
+                                padding: 10px;
+                                border-radius: 8px;
+                                border: 1px solid rgba(255, 255, 255, 0.2);
+                                background: rgba(0, 0, 0, 0.3);
+                                color: white;
+                                font-family: 'Inter', Arial, sans-serif;
+                            " />
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <button onclick="setQuickDateRange('7days')" style="
+                            background: rgba(255, 255, 255, 0.1);
+                            border: 1px solid rgba(255, 255, 255, 0.2);
+                            color: white;
+                            padding: 5px 12px;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            margin-right: 8px;
+                            font-size: 0.85rem;
+                        ">Last 7 Days</button>
+                        <button onclick="setQuickDateRange('30days')" style="
+                            background: rgba(255, 255, 255, 0.1);
+                            border: 1px solid rgba(255, 255, 255, 0.2);
+                            color: white;
+                            padding: 5px 12px;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            margin-right: 8px;
+                            font-size: 0.85rem;
+                        ">Last 30 Days</button>
+                        <button onclick="setQuickDateRange('3months')" style="
+                            background: rgba(255, 255, 255, 0.1);
+                            border: 1px solid rgba(255, 255, 255, 0.2);
+                            color: white;
+                            padding: 5px 12px;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            margin-right: 8px;
+                            font-size: 0.85rem;
+                        ">Last 3 Months</button>
+                        <button onclick="setQuickDateRange('all')" style="
+                            background: rgba(255, 255, 255, 0.1);
+                            border: 1px solid rgba(255, 255, 255, 0.2);
+                            color: white;
+                            padding: 5px 12px;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-size: 0.85rem;
+                        ">All Time</button>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h3 style="color: #ffffff; margin-bottom: 15px; font-size: 1.1rem;">📄 Export Format:</h3>
+                    <div style="display: flex; gap: 15px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="exportFormat" value="csv" checked style="margin-right: 8px;" />
+                            <span>📊 CSV (Excel Compatible)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="exportFormat" value="pdf" style="margin-right: 8px;" />
+                            <span>📄 PDF Report</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="exportFormat" value="json" style="margin-right: 8px;" />
+                            <span>🔧 JSON Data</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="planFilterSection" style="display: none; margin-bottom: 25px;">
+                    <h3 style="color: #ffffff; margin-bottom: 15px; font-size: 1.1rem;">💎 Plan Filters:</h3>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" name="planFilter" value="free" checked style="margin-right: 8px;" />
+                            <span>🆓 Free Plan</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" name="planFilter" value="standard" checked style="margin-right: 8px;" />
+                            <span>⭐ Standard Plan</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" name="planFilter" value="premium" checked style="margin-right: 8px;" />
+                            <span>💎 Premium Plan</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                    <button onclick="closeExportModal()" style="
+                        background: rgba(255, 255, 255, 0.1);
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        color: white;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                    ">Cancel</button>
+                    <button onclick="executeExport()" style="
+                        background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+                        border: none;
+                        color: white;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: 600;
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        🚀 Generate Export
+                    </button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Set default dates
+            setQuickDateRange('30days');
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeExportModal();
+                }
+            });
+        }
+        
+        function closeExportModal() {
+            const modal = document.getElementById('exportModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        let selectedExportType = '';
+        
+        function selectExportType(type) {
+            selectedExportType = type;
+            
+            // Remove previous selections
+            document.querySelectorAll('.export-option').forEach(option => {
+                option.style.borderColor = 'transparent';
+                option.style.background = 'rgba(255, 255, 255, 0.1)';
+            });
+            
+            // Highlight selected option
+            event.target.closest('.export-option').style.borderColor = '#8B5CF6';
+            event.target.closest('.export-option').style.background = 'rgba(139, 92, 246, 0.2)';
+            
+            // Show plan filters for relevant report types
+            const planFilterSection = document.getElementById('planFilterSection');
+            if (type === 'plans' || type === 'financial' || type === 'comprehensive') {
+                planFilterSection.style.display = 'block';
+            } else {
+                planFilterSection.style.display = 'none';
+            }
+        }
+        
+        function setQuickDateRange(range) {
+            const today = new Date();
+            const fromDateInput = document.getElementById('exportFromDate');
+            const toDateInput = document.getElementById('exportToDate');
+            
+            toDateInput.value = today.toISOString().split('T')[0];
+            
+            switch(range) {
+                case '7days':
+                    const week = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    fromDateInput.value = week.toISOString().split('T')[0];
+                    break;
+                case '30days':
+                    const month = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    fromDateInput.value = month.toISOString().split('T')[0];
+                    break;
+                case '3months':
+                    const threeMonths = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+                    fromDateInput.value = threeMonths.toISOString().split('T')[0];
+                    break;
+                case 'all':
+                    fromDateInput.value = '2020-01-01';
+                    break;
+            }
+        }
+        
+        function executeExport() {
+            if (!selectedExportType) {
+                alert('Please select a report type');
+                return;
+            }
+            
+            const fromDate = document.getElementById('exportFromDate').value;
+            const toDate = document.getElementById('exportToDate').value;
+            const format = document.querySelector('input[name="exportFormat"]:checked').value;
+            
+            const planFilters = Array.from(document.querySelectorAll('input[name="planFilter"]:checked')).map(cb => cb.value);
+            
+            // Show loading state
+            const exportBtn = document.querySelector('button[onclick="executeExport()"]');
+            const originalText = exportBtn.innerHTML;
+            exportBtn.innerHTML = '⏳ Generating...';
+            exportBtn.disabled = true;
+            
+            // Prepare export data
+            const exportData = {
+                type: selectedExportType,
+                fromDate: fromDate,
+                toDate: toDate,
+                format: format,
+                planFilters: planFilters,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Make API call to backend
+            fetch('/admin/export-reports', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(exportData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                if (format === 'csv' || format === 'pdf') {
+                    // For file downloads
+                    return response.blob();
+                } else {
+                    // For JSON data
+                    return response.json();
+                }
+            })
+            .then(data => {
+                if (format === 'csv' || format === 'pdf') {
+                    // Create download link
+                    const blob = data;
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `docshift_${selectedExportType}_report_${new Date().toISOString().split('T')[0]}.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showNotification('✅ Report exported successfully!', 'success');
+                } else {
+                    // For JSON, show preview or download
+                    const jsonStr = JSON.stringify(data, null, 2);
+                    const blob = new Blob([jsonStr], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `docshift_${selectedExportType}_data_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showNotification('✅ Data exported successfully!', 'success');
+                }
+                
+                closeExportModal();
+            })
+            .catch(error => {
+                console.error('Export error:', error);
+                showNotification(`❌ Export failed: ${error.message}`, 'error');
+            })
+            .finally(() => {
+                // Restore button state
+                exportBtn.innerHTML = originalText;
+                exportBtn.disabled = false;
+            });
+        }
+        
+        // Notification system for export feedback
+        function showNotification(message, type = 'info') {
+            // Remove existing notifications
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notif => notif.remove());
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                color: white;
+                font-weight: 600;
+                z-index: 10001;
+                min-width: 300px;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                animation: slideInRight 0.3s ease;
+                transition: all 0.3s ease;
+            `;
+            
+            // Set background color based on type
+            const colors = {
+                success: 'linear-gradient(135deg, #10b981, #059669)',
+                error: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                warning: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                info: 'linear-gradient(135deg, #3b82f6, #2563eb)'
+            };
+            
+            notification.style.background = colors[type] || colors.info;
+            notification.textContent = message;
+            
+            // Add close button
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '×';
+            closeBtn.style.cssText = `
+                background: none;
+                border: none;
+                color: white;
+                font-size: 20px;
+                float: right;
+                cursor: pointer;
+                margin-left: 10px;
+                opacity: 0.8;
+                transition: opacity 0.2s;
+            `;
+            closeBtn.onmouseover = () => closeBtn.style.opacity = '1';
+            closeBtn.onmouseout = () => closeBtn.style.opacity = '0.8';
+            closeBtn.onclick = () => notification.remove();
+            
+            notification.appendChild(closeBtn);
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.transform = 'translateX(100%)';
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+        
+        // Add CSS animation keyframes for notifications
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
 
         // Load data when page loads
         document.addEventListener('DOMContentLoaded', loadDashboardData);

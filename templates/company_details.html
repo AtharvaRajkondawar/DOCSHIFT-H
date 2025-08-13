@@ -76,6 +76,15 @@
             font-weight: 600;
             text-decoration: none;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn img {
+            width: 16px;
+            height: 16px;
+            filter: brightness(1.2);
         }
 
         .nav-btn:hover {
@@ -249,9 +258,11 @@
         }
 
         .stat-icon {
-            font-size: 24px;
+            width: 32px;
+            height: 32px;
             margin-bottom: 15px;
-            opacity: 0.7;
+            opacity: 0.8;
+            filter: brightness(1.2);
         }
 
         /* Tool Usage */
@@ -266,9 +277,13 @@
 
         .tools-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
             gap: 20px;
             margin-top: 20px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .tool-usage-card {
@@ -285,8 +300,10 @@
         }
 
         .tool-icon {
-            font-size: 32px;
+            width: 40px;
+            height: 35px;
             margin-bottom: 10px;
+            filter: brightness(1.2);
         }
 
         .tool-name {
@@ -351,7 +368,9 @@
             }
 
             .tools-grid {
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                grid-template-columns: repeat(2, 1fr);
+                grid-template-rows: repeat(4, 1fr);
+                gap: 15px;
             }
 
             .company-meta {
@@ -364,11 +383,13 @@
     <header class="header">
         <div class="logo-section">
             <img src="/static/logo.png" alt="DocShift Logo">
-            <h1>Company Details</h1>
         </div>
         <div class="nav-buttons">
             <a href="/admin/companies" class="nav-btn back-btn">← Back to Companies</a>
-            <a href="/admin/dashboard" class="nav-btn">📊 Dashboard</a>
+            <a href="/admin/dashboard" class="nav-btn">
+                <img src="/admin/dashboard.png" alt="Dashboard" />
+                Dashboard
+            </a>
             <a href="/logout" class="nav-btn" style="background: linear-gradient(135deg, #ef4444, #dc2626);">Logout</a>
         </div>
     </header>
@@ -380,26 +401,27 @@
                 <h1 id="company-name">Loading...</h1>
                 <div class="company-meta">
                     <div class="meta-item">
-                        <span>👤</span>
+                        <img src="/admin/account.png" alt="Owner" style="width: 22px; height: 18px; filter: brightness(1.2);" />
                         <span id="owner-name">Loading...</span>
                     </div>
                     <div class="meta-item">
-                        <span>📧</span>
+                        <img src="/admin/email.png" alt="Email" style="width: 22px; height: 21px; filter: brightness(1.2);" />
                         <span id="company-email">Loading...</span>
                     </div>
                     <div class="meta-item">
-                        <span>📱</span>
+                        <img src="/admin/contact.png" alt="Phone" style="width: 19px; height: 19px; filter: brightness(1.2);" />
                         <span id="company-phone">Loading...</span>
                     </div>
                     <div class="meta-item">
-                        <span>🏷️</span>
+                        <img src="/admin/Username.png" alt="Username" style="width: 22px; height: 23px; filter: brightness(1.2);" />
                         <span id="company-username">Loading...</span>
                     </div>
                 </div>
             </div>
             <div class="status-section">
                 <div class="status-badge status-active" id="company-status">
-                    ✅ Active
+                    <img src="/admin/Active Companies.png" alt="Active" style="width: 16px; height: 16px; margin-right: 6px; filter: brightness(1.2);" />
+                    Active
                 </div>
                 <div class="last-active" id="last-active">
                     Last active: Today
@@ -409,28 +431,31 @@
 
         <!-- Usage Statistics -->
         <section class="stats-section">
-            <h2 class="section-title">📊 Usage Statistics</h2>
+            <h2 class="section-title">
+                <img src="/admin/Usage Statistics.png" alt="Statistics" style="width: 24px; height: 24px; margin-right: 8px; filter: brightness(1.2); vertical-align: middle;" />
+                Usage Statistics
+            </h2>
             <div class="stats-grid">
                 <div class="stat-card files">
-                    <div class="stat-icon">📁</div>
+                    <img src="/admin/Files Processed.png" alt="Files" class="stat-icon" />
                     <div class="stat-number" id="total-files">-</div>
                     <div class="stat-label">Total Files</div>
                     <div class="stat-sublabel">Processed & Stored</div>
                 </div>
                 <div class="stat-card storage">
-                    <div class="stat-icon">💾</div>
+                    <img src="/admin/Storage used.png" alt="Storage" class="stat-icon" />
                     <div class="stat-number" id="storage-used">-</div>
                     <div class="stat-label">Storage Used</div>
                     <div class="stat-sublabel">MB of data</div>
                 </div>
                 <div class="stat-card activity">
-                    <div class="stat-icon">⚡</div>
+                    <img src="/admin/Monthly activity.png" alt="Activity" class="stat-icon" />
                     <div class="stat-number" id="monthly-activity">-</div>
                     <div class="stat-label">Monthly Activity</div>
                     <div class="stat-sublabel">Actions this month</div>
                 </div>
                 <div class="stat-card tools">
-                    <div class="stat-icon">🔧</div>
+                    <img src="/admin/Tools used.png" alt="Tools" class="stat-icon" />
                     <div class="stat-number" id="tools-used">-</div>
                     <div class="stat-label">Tools Used</div>
                     <div class="stat-sublabel">Different features</div>
@@ -439,8 +464,11 @@
         </section>
 
         <!-- Tool Usage Breakdown -->
+        <h2 class="section-title">
+            <img src="/admin/Tools used.png" alt="Tools" style="width: 24px; height: 24px; margin-right: 8px; filter: brightness(1.2); vertical-align: middle;" />
+            Tool Usage Breakdown
+        </h2>
         <section class="tools-section">
-            <h2 class="section-title">🛠️ Tool Usage Breakdown</h2>
             <div class="tools-grid" id="tools-grid">
                 <div class="loading">
                     <div class="loading-spinner"></div>
@@ -496,19 +524,19 @@
             const toolsGrid = document.getElementById('tools-grid');
             
             const tools = [
-                { key: 'pdf', name: 'PDF Tools', icon: '📄' },
-                { key: 'image', name: 'Image Tools', icon: '🖼️' },
-                { key: 'text', name: 'Text Tools', icon: '📝' },
-                { key: 'audio', name: 'Audio Tools', icon: '🎵' },
-                { key: 'compress', name: 'Compression', icon: '🗜️' },
-                { key: 'merge', name: 'File Merge', icon: '🔗' },
-                { key: 'split', name: 'File Split', icon: '✂️' },
-                { key: 'convert', name: 'Conversion', icon: '🔄' }
+                { key: 'pdf', name: 'PDF Tools', icon: '/admin/PDf Tools.png' },
+                { key: 'image', name: 'Image Tools', icon: '/admin/image tool.png' },
+                { key: 'text', name: 'Text Tools', icon: '/admin/text tool.png' },
+                { key: 'audio', name: 'Audio Tools', icon: '/admin/Audio tool.png' },
+                { key: 'compress', name: 'Compression', icon: '/admin/Compression.png' },
+                { key: 'merge', name: 'File Merge', icon: '/admin/Files Merge.png' },
+                { key: 'split', name: 'File Split', icon: '/admin/file Split.png' },
+                { key: 'convert', name: 'Conversion', icon: '/admin/Export.png' }
             ];
 
             toolsGrid.innerHTML = tools.map(tool => `
                 <div class="tool-usage-card">
-                    <div class="tool-icon">${tool.icon}</div>
+                    <img src="${tool.icon}" alt="${tool.name}" class="tool-icon" />
                     <div class="tool-name">${tool.name}</div>
                     <div class="tool-count">${toolUsage[tool.key] || 0}</div>
                 </div>

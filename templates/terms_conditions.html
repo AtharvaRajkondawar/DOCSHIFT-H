@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms & Conditions - DocShift</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+    
+    <style>
+        :root {
+            --bg-main: #000000;
+            --tool-gradient: linear-gradient(-53deg, #31004A, #14033D);
+            --tool-radius: 20px;
+            --card-shadow: 0 4px 24px 0 rgba(40, 25, 67, 0.14);
+            --tool-shadow-hover: 0 8px 38px 0 rgba(40, 25, 67, 0.34);
+            --white: #fff;
+            --purple-light: #8B5CF6;
+            --purple-dark: #5B21B6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 20px 40px;
+            position: relative;
+        }
+
+        .back-arrow {
+            color: var(--white);
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 20px;
+            text-decoration: none;
+            transition: transform 0.2s ease;
+        }
+
+        .back-arrow:hover {
+            transform: translateX(-3px);
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Terms Icon */
+        .terms-icon-container {
+            margin-bottom: 30px;
+            align-self: center;
+        }
+
+        .terms-icon {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .terms-icon img {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+        }
+
+        /* Title Section */
+        .title-section {
+            text-align: center;
+            margin-bottom: 40px;
+            align-self: center;
+            width: 100%;
+        }
+
+        .main-title {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+            line-height: 1.5;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Divider */
+        .divider {
+            width: 165%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 40px 0;
+        }
+
+        /* Content Section */
+        .content-section {
+            width: 100%;
+            text-align: left;
+            align-self: flex-start;
+        }
+
+        .content-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--white);
+            text-align: left;
+        }
+
+        .content-intro {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .effective-date {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .content-intro::before,
+        .effective-date::before {
+            content: "•";
+            margin-right: 10px;
+            color: var(--purple-light);
+        }
+
+        .welcome-text {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 40px;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .welcome-text::before {
+            content: "•";
+            margin-right: 10px;
+            color: var(--purple-light);
+        }
+
+        /* Terms Sections */
+        .terms-section {
+            margin-bottom: 40px;
+            text-align: left;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            text-align: left;
+        }
+
+        .section-number {
+            color: var(--purple-light);
+            margin-right: 8px;
+            font-weight: 700;
+        }
+
+        .section-content {
+            margin-left: 0;
+            text-align: left;
+        }
+
+        .section-item {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 12px;
+            line-height: 1.6;
+            display: flex;
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .section-item::before {
+            content: "•";
+            color: var(--purple-light);
+            margin-right: 10px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .section-description {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .privacy-link {
+            color: var(--purple-light);
+            text-decoration: underline;
+            transition: color 0.2s ease;
+        }
+
+        .privacy-link:hover {
+            color: var(--white);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 40px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .logo {
+                height: 45px;
+            }
+
+            .main-title {
+                font-size: 36px;
+            }
+
+            .subtitle {
+                font-size: 14px;
+            }
+
+            .content-title {
+                font-size: 28px;
+            }
+
+            .terms-icon {
+                width: 60px;
+                height: 60px;
+            }
+
+            .terms-icon img {
+                width: 70px;
+                height: 70px;
+            }
+
+            .main-content {
+                padding: 20px 15px;
+            }
+
+            .section-title {
+                font-size: 18px;
+            }
+
+            .section-item,
+            .section-description,
+            .content-intro,
+            .effective-date,
+            .welcome-text {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-title {
+                font-size: 28px;
+            }
+
+            .content-title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <a href="/" class="back-arrow">←</a>
+        <img src="/static/logo.png" alt="DocShift" class="logo" draggable="false" />
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Terms Icon -->
+        <div class="terms-icon-container">
+            <div class="terms-icon">
+                <img src="/static/terms.png" alt="Terms & Conditions" draggable="false" />
+            </div>
+        </div>
+
+        <!-- Title Section -->
+        <div class="title-section">
+            <h1 class="main-title">Terms & Conditions</h1>
+            <p class="subtitle">Please read these terms carefully before using DocShift's document conversion and processing platform. Your use of our services constitutes acceptance of these terms.</p>
+        </div>
+
+        <!-- Divider -->
+        <div class="divider"></div>
+
+        <!-- Content Section -->
+        <div class="content-section">
+            <h2 class="content-title">Terms and Conditions</h2>
+            
+            <div class="effective-date">Effective Date: August 11, 2025</div>
+            
+            <div class="welcome-text">Welcome to DocShift, operated by TARS DocShift. These Terms and Conditions govern your use of our document conversion platform and services. By accessing or using DocShift, you agree to be bound by these Terms.</div>
+        </div>
+
+        <!-- Divider -->
+        <div class="divider"></div>
+
+        <div class="content-section">
+            <!-- Section 1: Acceptance of Terms -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">1.</span>
+                    Acceptance of Terms
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">By using DocShift's services, you confirm that you are at least 18 years old or have parental consent</div>
+                    <div class="section-item">You agree to comply with all applicable laws and regulations while using our platform</div>
+                    <div class="section-item">These terms constitute a legally binding agreement between you and TARS DocShift</div>
+                    <div class="section-item">If you disagree with any part of these terms, you may not use our services</div>
+                </div>
+            </div>
+
+            <!-- Section 2: Description of Services -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">2.</span>
+                    Description of Services
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">DocShift provides AI-powered document conversion, editing, and processing tools</div>
+                    <div class="section-item">Services include PDF conversion, document merging, splitting, compression, and editing</div>
+                    <div class="section-item">Additional features include OCR, text extraction, image processing, and format conversion</div>
+                    <div class="section-item">We offer both free and premium subscription tiers with varying feature access</div>
+                    <div class="section-item">Service availability may vary based on your subscription level and geographic location</div>
+                </div>
+            </div>
+
+            <!-- Section 3: User Accounts and Registration -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">3.</span>
+                    User Accounts and Registration
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">You must provide accurate and complete information when creating an account</div>
+                    <div class="section-item">You are responsible for maintaining the confidentiality of your login credentials</div>
+                    <div class="section-item">You must notify us immediately of any unauthorized access to your account</div>
+                    <div class="section-item">One account per person; sharing accounts is prohibited</div>
+                    <div class="section-item">We reserve the right to suspend or terminate accounts that violate these terms</div>
+                </div>
+            </div>
+
+            <!-- Section 4: Acceptable Use Policy -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">4.</span>
+                    Acceptable Use Policy
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">You may only upload documents that you own or have permission to process</div>
+                    <div class="section-item">Prohibited content includes illegal, harmful, defamatory, or copyrighted material</div>
+                    <div class="section-item">You may not attempt to reverse engineer, hack, or compromise our systems</div>
+                    <div class="section-item">Excessive use that impacts service performance for other users is prohibited</div>
+                    <div class="section-item">Commercial reselling of our services without authorization is not permitted</div>
+                </div>
+            </div>
+
+            <!-- Section 5: Document Processing and Storage -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">5.</span>
+                    Document Processing and Storage
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">Uploaded documents are processed on secure servers and automatically deleted within 24 hours</div>
+                    <div class="section-item">Premium users may opt for extended storage periods as per their subscription plan</div>
+                    <div class="section-item">We do not claim ownership of your documents or their content</div>
+                    <div class="section-item">You grant us temporary license to process your documents to provide our services</div>
+                    <div class="section-item">Large files may have processing time limitations and size restrictions</div>
+                </div>
+            </div>
+
+            <!-- Section 6: Subscription and Payment Terms -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">6.</span>
+                    Subscription and Payment Terms
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">Premium subscriptions are billed monthly or annually in advance</div>
+                    <div class="section-item">All fees are non-refundable except as required by applicable law</div>
+                    <div class="section-item">Subscription auto-renewals can be cancelled at any time before the next billing cycle</div>
+                    <div class="section-item">Price changes will be communicated 30 days in advance</div>
+                    <div class="section-item">Failed payments may result in service suspension until payment is resolved</div>
+                </div>
+            </div>
+
+            <!-- Section 7: Intellectual Property Rights -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">7.</span>
+                    Intellectual Property Rights
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">DocShift platform, software, and technology are owned by TARS DocShift</div>
+                    <div class="section-item">You retain all rights to your original documents and their content</div>
+                    <div class="section-item">Our logos, trademarks, and branding elements may not be used without permission</div>
+                    <div class="section-item">You may not copy, modify, or redistribute our software or algorithms</div>
+                    <div class="section-item">Feedback and suggestions provided to us may be used to improve our services</div>
+                </div>
+            </div>
+
+            <!-- Section 8: Service Availability and Performance -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">8.</span>
+                    Service Availability and Performance
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">We strive for 99.9% uptime but cannot guarantee uninterrupted service availability</div>
+                    <div class="section-item">Scheduled maintenance will be announced in advance when possible</div>
+                    <div class="section-item">Processing speeds may vary based on file size, complexity, and server load</div>
+                    <div class="section-item">We reserve the right to impose usage limits to ensure fair access for all users</div>
+                    <div class="section-item">Emergency maintenance may be performed without prior notice</div>
+                </div>
+            </div>
+
+            <!-- Section 9: Limitation of Liability -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">9.</span>
+                    Limitation of Liability
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">DocShift is provided "as is" without warranties of any kind</div>
+                    <div class="section-item">We are not liable for any direct, indirect, or consequential damages</div>
+                    <div class="section-item">Our maximum liability is limited to the amount you paid for services in the past 12 months</div>
+                    <div class="section-item">We are not responsible for data loss, though we implement best practices for data protection</div>
+                    <div class="section-item">Users are advised to maintain backups of important documents</div>
+                </div>
+            </div>
+
+            <!-- Section 10: Privacy and Data Protection -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">10.</span>
+                    Privacy and Data Protection
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">Your privacy is important to us and is governed by our <a href="/privacy-policy" class="privacy-link">Privacy Policy</a></div>
+                    <div class="section-item">We comply with GDPR, CCPA, and other applicable privacy regulations</div>
+                    <div class="section-item">Document processing is performed with industry-standard encryption</div>
+                    <div class="section-item">We do not access, read, or analyze the content of your documents</div>
+                    <div class="section-item">Data breaches will be reported to users and authorities as required by law</div>
+                </div>
+            </div>
+
+            <!-- Section 11: Termination -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">11.</span>
+                    Termination
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">You may terminate your account at any time through your account settings</div>
+                    <div class="section-item">We may suspend or terminate accounts for violations of these terms</div>
+                    <div class="section-item">Upon termination, your access to services will cease immediately</div>
+                    <div class="section-item">Stored documents will be deleted within 30 days of account termination</div>
+                    <div class="section-item">Outstanding payment obligations survive account termination</div>
+                </div>
+            </div>
+
+            <!-- Section 12: Governing Law and Disputes -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">12.</span>
+                    Governing Law and Disputes
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">These terms are governed by the laws of [Your Jurisdiction]</div>
+                    <div class="section-item">Disputes will be resolved through binding arbitration when possible</div>
+                    <div class="section-item">You agree to resolve disputes individually, not as part of a class action</div>
+                    <div class="section-item">Legal proceedings must be filed within one year of the dispute arising</div>
+                    <div class="section-item">If arbitration is unavailable, disputes will be resolved in courts of [Your Jurisdiction]</div>
+                </div>
+            </div>
+
+            <!-- Section 13: Changes to Terms -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">13.</span>
+                    Changes to Terms
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">We reserve the right to modify these terms at any time</div>
+                    <div class="section-item">Significant changes will be communicated via email and platform notifications</div>
+                    <div class="section-item">Continued use of services after changes constitutes acceptance of new terms</div>
+                    <div class="section-item">If you disagree with changes, you must discontinue use of our services</div>
+                    <div class="section-item">We recommend reviewing these terms periodically for updates</div>
+                </div>
+            </div>
+
+            <!-- Section 14: Contact Information -->
+            <div class="terms-section">
+                <h3 class="section-title">
+                    <span class="section-number">14.</span>
+                    Contact Information
+                </h3>
+                <div class="section-content">
+                    <div class="section-item">General inquiries: support@docshift.com</div>
+                    <div class="section-item">Legal matters: legal@docshift.com</div>
+                    <div class="section-item">Business partnerships: business@docshift.com</div>
+                    <div class="section-item">Mailing address: TARS DocShift, [Your Business Address]</div>
+                    <div class="section-item">We aim to respond to all inquiries within 48 hours</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        © 2025 TARS DocShift. All rights reserved.
+    </div>
+
+    <script>
+        // Add any interactive functionality here if needed
+        console.log('Terms & Conditions page loaded');
+    </script>
+</body>
+</html>

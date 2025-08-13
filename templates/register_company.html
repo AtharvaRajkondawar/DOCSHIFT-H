@@ -46,13 +46,13 @@
         }
 
         .container {
-            background: var(--tool-gradient);
             padding: 40px 35px;
-            max-width: 500px;
+            max-width: 1057px;
             width: 100%;
             border-radius: var(--tool-radius);
             box-shadow: var(--card-shadow);
             transition: box-shadow 0.3s ease;
+            border: 2px solid white;
         }
 
         .container:hover {
@@ -71,6 +71,19 @@
             margin-bottom: 20px;
         }
 
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .form-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
         label {
             display: block;
             margin-bottom: 8px;
@@ -84,7 +97,6 @@
             padding: 14px 16px;
             background-color: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
             color: var(--white);
             font-size: 15px;
             font-family: 'Inter', Arial, sans-serif;
@@ -148,6 +160,18 @@
             color: rgba(255, 255, 255, 0.7);
             font-size: 14px;
         }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+            
+            .container {
+                max-width: 500px;
+                padding: 30px 25px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -157,33 +181,39 @@
     <div class="container">
         <h1>Register Company</h1>
         <form id="companyForm" method="POST" action="/register-company">
-            <div class="form-group">
-                <label for="company_name">Company's Name</label>
-                <input type="text" name="company_name" id="company_name" placeholder="Enter company name" required>
-            </div>
-            <div class="form-group">
-                <label for="owner_name">Owner's Name</label>
-                <input type="text" name="owner_name" id="owner_name" placeholder="Enter owner's name" required>
-            </div>
-            <div class="form-group">
-                <label for="email">E-mail ID</label>
-                <input type="email" name="email" id="email" placeholder="Enter email ID" required>
-            </div>
-            <div class="form-group">
-                <label for="phone">Phone Number</label>
-                <input type="tel" name="phone" id="phone" placeholder="Enter phone number" required>
-            </div>
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" name="username" id="username" placeholder="Enter username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" name="password" id="password" placeholder="Enter password" required>
-            </div>
-            <div class="form-group">
-                <label for="confirm_password">Confirm Password</label>
-                <input type="password" name="confirm_password" id="confirm_password" placeholder="Re-enter password" required>
+            <div class="form-grid">
+                <div class="form-column">
+                    <div class="form-group">
+                        <label for="company_name">Company's Name</label>
+                        <input type="text" name="company_name" id="company_name" placeholder="Enter company name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="owner_name">Owner's Name</label>
+                        <input type="text" name="owner_name" id="owner_name" placeholder="Enter owner's name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">E-mail ID</label>
+                        <input type="email" name="email" id="email" placeholder="Enter email ID" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" name="phone" id="phone" placeholder="Enter phone number" required>
+                    </div>
+                </div>
+                <div class="form-column">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" name="username" id="username" placeholder="Enter username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" name="password" id="password" placeholder="Enter password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm Password</label>
+                        <input type="password" name="confirm_password" id="confirm_password" placeholder="Re-enter password" required>
+                    </div>
+                </div>
             </div>
             <button type="submit">Register Company</button>
         </form>

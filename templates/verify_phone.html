@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Phone & Email - DocShift</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+    <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+    <style>
+        :root {
+            --bg-main: #000000;
+            --tool-gradient: linear-gradient(-53deg, #31004A, #14033D);
+            --tool-radius: 20px;
+            --card-shadow: 0 4px 24px 0 rgba(40, 25, 67, 0.14);
+            --tool-shadow-hover: 0 8px 38px 0 rgba(40, 25, 67, 0.34);
+            --white: #fff;
+            --success: #28a745;
+            --error: #dc3545;
+            --warning: #ffc107;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+            font-family: 'Inter', Arial, sans-serif;
+            color: var(--white);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-container img {
+            height: 80px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .container {
+            background: var(--tool-gradient);
+            padding: 40px 35px;
+            max-width: 500px;
+            width: 100%;
+            border-radius: var(--tool-radius);
+            box-shadow: var(--card-shadow);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            box-shadow: var(--tool-shadow-hover);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .phone-display {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .phone-display .label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+        }
+
+        .phone-display .number {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--white);
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: var(--white);
+            font-size: 18px;
+            font-family: 'Inter', Arial, sans-serif;
+            text-align: center;
+            letter-spacing: 3px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: normal;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #610094, #31004A);
+            border: none;
+            border-radius: 10px;
+            color: var(--white);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(97, 0, 148, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .resend-btn {
+            background: linear-gradient(135deg, #ffc107, #ff8c00);
+            font-size: 14px;
+            padding: 12px;
+        }
+
+        .resend-btn:hover {
+            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+        }
+
+        .message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .success {
+            background-color: rgba(40, 167, 69, 0.2);
+            border: 1px solid var(--success);
+            color: #90ee90;
+        }
+
+        .error {
+            background-color: rgba(220, 53, 69, 0.2);
+            border: 1px solid var(--error);
+            color: #ffb3b3;
+        }
+
+        .info {
+            background-color: rgba(23, 162, 184, 0.2);
+            border: 1px solid #17a2b8;
+            color: #87ceeb;
+        }
+
+        .dev-info {
+            background-color: rgba(255, 193, 7, 0.2);
+            border: 1px solid var(--warning);
+            color: #ffe066;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .dev-info strong {
+            color: #ffdd33;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 4px solid #610094;
+        }
+
+        .instructions h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: var(--white);
+        }
+
+        .instructions p {
+            margin: 0;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.4;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid var(--white);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+
+        .back-link a:hover {
+            color: var(--white);
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img src="/static/logo.png" alt="DocShift Logo">
+    </div>
+    <div class="container">
+        <h1>Verify Phone & Email</h1>
+        
+        {% if message %}
+        <div class="message info">{{ message }}</div>
+        {% endif %}
+        
+        {% if error %}
+        <div class="message error">{{ error }}</div>
+        {% endif %}
+        
+        <div class="instructions">
+            <h3>📱 Phone Verification</h3>
+            <p>Enter the 6-digit code sent to: <strong>{{ phone }}</strong></p>
+        </div>
+        
+        <div class="instructions">
+            <h3>📧 Email Verification</h3>
+            <p>Enter the 6-digit code sent to: <strong>{{ email }}</strong></p>
+        </div>
+
+        <form method="POST" action="{{ url_for('verify_registration') }}">
+            <input type="hidden" name="temp_id" value="{{ temp_id }}">
+            
+            <div class="form-group">
+                <label for="phone_otp">Phone Verification Code</label>
+                <input type="text" id="phone_otp" name="phone_otp" placeholder="Enter 6-digit phone code" maxlength="6" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email_otp">Email Verification Code</label>
+                <input type="text" id="email_otp" name="email_otp" placeholder="Enter 6-digit email code" maxlength="6" required>
+            </div>
+            
+            <button type="submit">Complete Registration</button>
+        </form>
+        
+        <div class="loading" id="loadingResend">
+            <span class="spinner"></span>Sending new codes...
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button type="button" class="resend-btn" onclick="resendOTP('phone')" style="flex: 1;">Resend Phone Code</button>
+            <button type="button" class="resend-btn" onclick="resendOTP('email')" style="flex: 1;">Resend Email Code</button>
+        </div>
+        
+        <button type="button" class="resend-btn" onclick="resendOTP('both')">Resend Both Codes</button>
+        
+        {% if dev_phone_otp or dev_email_otp %}
+        <div class="dev-info">
+            <strong>🔧 Development Mode:</strong><br>
+            {% if dev_phone_otp %}Phone OTP: <strong>{{ dev_phone_otp }}</strong><br>{% endif %}
+            {% if dev_email_otp %}Email OTP: <strong>{{ dev_email_otp }}</strong><br>{% endif %}
+            <small>These will not be shown in production</small>
+        </div>
+        {% endif %}
+        
+        <div class="back-link">
+            <a href="/register-company">← Back to Registration</a>
+        </div>
+    </div>
+
+    <script>
+        // Auto-format OTP inputs
+        function setupOTPInput(inputId) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener('input', function(e) {
+                    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                    e.target.value = value;
+                });
+            }
+        }
+        
+        setupOTPInput('phone_otp');
+        setupOTPInput('email_otp');
+
+        // Resend OTP function
+        function resendOTP(type = 'both') {
+            const loadingEl = document.getElementById('loadingResend');
+            const resendBtns = document.querySelectorAll('.resend-btn');
+            
+            loadingEl.style.display = 'block';
+            resendBtns.forEach(btn => btn.style.display = 'none');
+            
+            fetch('/resend-otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `temp_id={{ temp_id }}&type=${type}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingEl.style.display = 'none';
+                resendBtns.forEach(btn => btn.style.display = 'inline-block');
+                
+                if (data.success) {
+                    // Update dev info if available
+                    const devInfo = document.querySelector('.dev-info');
+                    if (devInfo && (data.dev_phone_otp || data.dev_email_otp)) {
+                        let devContent = '<strong>🔧 Development Mode:</strong><br>';
+                        if (data.dev_phone_otp) devContent += `Phone OTP: <strong>${data.dev_phone_otp}</strong><br>`;
+                        if (data.dev_email_otp) devContent += `Email OTP: <strong>${data.dev_email_otp}</strong><br>`;
+                        devContent += '<small>These will not be shown in production</small>';
+                        devInfo.innerHTML = devContent;
+                    }
+                    
+                    showMessage(data.message, 'success');
+                } else {
+                    showMessage(data.error || 'Failed to resend codes', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingEl.style.display = 'none';
+                resendBtns.forEach(btn => btn.style.display = 'inline-block');
+                showMessage('Network error. Please try again.', 'error');
+            });
+        }
+
+        function showMessage(text, type) {
+            // Remove existing messages
+            const existingMessages = document.querySelectorAll('.message');
+            existingMessages.forEach(msg => msg.remove());
+            
+            // Create new message
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+            
+            // Insert after title
+            const title = document.querySelector('h1');
+            title.after(messageDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+
+        // Focus on first OTP input when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstInput = document.getElementById('phone_otp');
+            if (firstInput) firstInput.focus();
+        });
+    </script>
+</body>
+</html>

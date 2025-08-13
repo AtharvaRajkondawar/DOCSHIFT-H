@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Help & Support - DocShift</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+    
+    <style>
+        :root {
+            --bg-main: #000000;
+            --tool-gradient: linear-gradient(-53deg, #31004A, #14033D);
+            --tool-radius: 20px;
+            --card-shadow: 0 4px 24px 0 rgba(40, 25, 67, 0.14);
+            --tool-shadow-hover: 0 8px 38px 0 rgba(40, 25, 67, 0.34);
+            --white: #fff;
+            --purple-light: #8B5CF6;
+            --purple-dark: #5B21B6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 20px 40px;
+            position: relative;
+        }
+
+        .back-arrow {
+            color: var(--white);
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 20px;
+            text-decoration: none;
+            transition: transform 0.2s ease;
+        }
+
+        .back-arrow:hover {
+            transform: translateX(-3px);
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Help Circle Icon */
+        .help-icon-container {
+            margin-bottom: 30px;
+        }
+
+        .help-icon {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .help-icon img {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+        }
+
+        /* Title Section */
+        .title-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .main-title {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+        }
+
+        /* Search Section */
+        .search-section {
+            width: 100%;
+            max-width: 860px;
+            margin-bottom: 60px;
+        }
+
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 16px 24px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease, background-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--purple-light);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, var(--purple-light), var(--purple-dark));
+            border: none;
+            border-radius: 12px;
+            padding: 16px 32px;
+            margin-left: 12px;
+            color: var(--white);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        /* FAQ Grid */
+        .faq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            width: 100%;
+            margin-bottom: 60px;
+        }
+
+        .faq-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .faq-item {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.2s ease, text-decoration 0.2s ease;
+            font-weight: 400;
+        }
+
+        .faq-item:hover {
+            color: var(--white);
+            text-decoration: underline;
+            text-decoration-color: var(--white);
+        }
+
+        /* Contact Section */
+        .contact-section {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            width: 115%;
+        }
+
+        .contact-card {
+            background: var(--tool-gradient);
+            border-radius: var(--tool-radius);
+            padding: 30px 24px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .contact-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--tool-shadow-hover);
+        }
+
+        .contact-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .contact-icon img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+        }
+
+        .contact-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--white);
+        }
+
+        .contact-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .contact-detail {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+        }
+
+        .contact-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px 20px;
+            color: var(--white);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .contact-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 40px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .logo {
+                height: 45px;
+            }
+
+            .main-title {
+                font-size: 36px;
+            }
+
+            .subtitle {
+                font-size: 16px;
+            }
+
+            .help-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+            }
+
+            .search-container {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .search-btn {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .faq-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .contact-section {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+
+            .main-content {
+                padding: 20px 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-title {
+                font-size: 28px;
+            }
+
+            .contact-card {
+                padding: 20px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <a href="/" class="back-arrow">←</a>
+        <img src="/static/logo.png" alt="DocShift" class="logo" draggable="false" />
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Help Icon -->
+        <div class="help-icon-container">
+            <div class="help-icon">
+                <img src="/static/question.png" alt="Help" draggable="false" />
+            </div>
+        </div>
+
+        <!-- Title Section -->
+        <div class="title-section">
+            <h1 class="main-title">Help & support</h1>
+            <p class="subtitle">How can we help you?</p>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-section">
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    placeholder="Search for help topics, features, or common issues..."
+                    id="helpSearch"
+                />
+                <button class="search-btn" onclick="searchHelp()">Search</button>
+            </div>
+        </div>
+
+        <!-- FAQ Grid -->
+        <div class="faq-grid">
+            <div class="faq-column">
+                <div class="faq-item" onclick="showFAQ('file-formats')">What file formats are supported?</div>
+                <div class="faq-item" onclick="showFAQ('file-size-limit')">What's the maximum file size I can upload?</div>
+                <div class="faq-item" onclick="showFAQ('processing-time')">How long does document processing take?</div>
+                <div class="faq-item" onclick="showFAQ('data-storage')">How long are my files stored?</div>
+                <div class="faq-item" onclick="showFAQ('bulk-conversion')">Can I convert multiple files at once?</div>
+            </div>
+            <div class="faq-column">
+                <div class="faq-item" onclick="showFAQ('reset-password')">How do I reset my password?</div>
+                <div class="faq-item" onclick="showFAQ('data-secure')">Is my data secure?</div>
+                <div class="faq-item" onclick="showFAQ('cancel-subscription')">Can I cancel my subscription at any time?</div>
+                <div class="faq-item" onclick="showFAQ('premium-features')">What are premium features?</div>
+                <div class="faq-item" onclick="showFAQ('ai-tools')">How do AI-powered tools work?</div>
+            </div>
+            <div class="faq-column">
+                <div class="faq-item" onclick="showFAQ('download-files')">How do I download converted files?</div>
+                <div class="faq-item" onclick="showFAQ('quality-loss')">Will my document quality be affected?</div>
+                <div class="faq-item" onclick="showFAQ('mobile-access')">Can I use DocShift on mobile devices?</div>
+                <div class="faq-item" onclick="showFAQ('api-access')">Do you offer API access?</div>
+                <div class="faq-item" onclick="showFAQ('technical-support')">How can I get technical support?</div>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <div class="contact-section">
+            <!-- Contact Us -->
+            <div class="contact-card" onclick="contactUs()">
+                <div class="contact-icon">
+                    <img src="/static/phone.png" alt="Phone" draggable="false" />
+                </div>
+                <div class="contact-title">Contact Us</div>
+                <div class="contact-desc">Reach out our support team for personalized assistance</div>
+                <div class="contact-detail">Phone: +91 XXXXXXXXXX</div>
+                <button class="contact-btn">Contact</button>
+            </div>
+
+            <!-- Email Us -->
+            <div class="contact-card" onclick="emailUs()">
+                <div class="contact-icon">
+                    <img src="/static/mail.png" alt="Email" draggable="false" />
+                </div>
+                <div class="contact-title">Email Us</div>
+                <div class="contact-desc">Reach out our support team for personalized assistance</div>
+                <div class="contact-detail">Email: support@docshift.com</div>
+                <button class="contact-btn">Email</button>
+            </div>
+
+            <!-- Chat with Us -->
+            <div class="contact-card" onclick="chatWithUs()">
+                <div class="contact-icon">
+                    <img src="/static/chat.png" alt="Chat" draggable="false" />
+                </div>
+                <div class="contact-title">Chat with Us</div>
+                <div class="contact-desc">Reach out our support team for personalized assistance</div>
+                <div class="contact-detail">Start a chat and get your answers</div>
+                <button class="contact-btn">Start a chat</button>
+            </div>
+
+            <!-- Feedback & Suggestions -->
+            <div class="contact-card" onclick="sendFeedback()">
+                <div class="contact-icon">
+                    <img src="/static/feedback.png" alt="Feedback" draggable="false" />
+                </div>
+                <div class="contact-title">Feedback & Suggestions</div>
+                <div class="contact-desc">Share your feedback and suggestions to improve DocShift</div>
+                <div class="contact-detail">Start a chat and tell your answers</div>
+                <button class="contact-btn">Start a chat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        © 2025 TARS DocShift. All rights reserved.
+    </div>
+
+    <script>
+        // Search functionality
+        function searchHelp() {
+            const searchTerm = document.getElementById('helpSearch').value.trim();
+            if (searchTerm) {
+                // Implement search logic here
+                console.log('Searching for:', searchTerm);
+                alert(`Searching for: "${searchTerm}"`);
+                // You can integrate this with your backend search functionality
+            }
+        }
+
+        // FAQ functions
+        function showFAQ(topic) {
+            // Handle FAQ display logic
+            console.log('FAQ topic:', topic);
+            
+            const faqContent = {
+                // Account & Security
+                'reset-password': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/Reset Password.png' alt='Reset Password' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600; color:#fff;">Reset Password</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">To reset your password:</div>
+                    <ol style="margin-left: 20px; margin-bottom: 0.5em;">
+                        <li>Go to login page</li>
+                        <li>Click "Forgot Password"</li>
+                        <li>Enter your email</li>
+                        <li>Check your email for reset link</li>
+                        <li>Follow the instructions in the email</li>
+                    </ol>
+                    `,
+                'data-secure': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/Data secure.png' alt='Data Secure' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600; color:#fff;">Data Secure</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">Yes, your data is highly secure. We use:</div>
+                    <ul style="margin-left: 20px; margin-bottom: 0.5em; list-style: disc; color: #fff;">
+                        <li>End-to-end encryption for all file uploads</li>
+                        <li>SSL/TLS encryption for data transmission</li>
+                        <li>Automatic file deletion within 24 hours</li>
+                        <li>SOC 2 compliant infrastructure</li>
+                        <li>Regular security audits</li>
+                    </ul>
+                `,
+                'cancel-subscription': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/Cancel Subscription.png' alt='Cancel Subscription' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600; color:#fff;">Cancel Subscription</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">Yes, you can cancel your subscription at any time:</div>
+                    <ol style="margin-left: 20px; margin-bottom: 0.5em;">
+                        <li>Go to Profile → Account Settings</li>
+                        <li>Click "Manage Subscription"</li>
+                        <li>Select "Cancel Subscription"</li>
+                        <li>Confirm cancellation</li>
+                    </ol>
+                    <div style="margin-bottom: 6px;">No cancellation fees apply and you keep access until the end of your billing period.</div>
+                `,
+                
+                // File Operations
+                'file-formats': 'DocShift supports these formats:',
+                'file-size-limit': 'File size limits by plan:\n\n🆓 Free Plan: Up to 10MB per file\n⭐ Standard Plan: Up to 50MB per file\n💎 Premium Plan: Up to 200MB per file\n\nFor larger files, consider:\n• Compressing your document first\n• Splitting large files into smaller parts\n• Upgrading to a higher plan',
+                'file-size-limit': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/File Size.png' alt='File Size Limit' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600; color:#fff;">File Size Limit</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">File size limits by plan:</div>
+                    <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Free Plan.png' alt='Free Plan' style='height:28px;width:28px;'>
+                            <span><b>Free Plan:</b> Up to 10MB per file</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Standard Plan.png' alt='Standard Plan' style='height:28px;width:28px;'>
+                            <span><b>Standard Plan:</b> Up to 50MB per file</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Premium Plan.png' alt='Premium Plan' style='height:28px;width:28px;'>
+                            <span><b>Premium Plan:</b> Up to 200MB per file</span>
+                        </li>
+                    </ul>
+                    <div style="margin-bottom: 6px;">For larger files, consider:</div>
+                    <ul style="margin-left: 20px; margin-bottom: 0.5em; list-style: disc; color: #fff;">
+                        <li>Compressing your document first</li>
+                        <li>Splitting large files into smaller parts</li>
+                        <li>Upgrading to a higher plan</li>
+                    </ul>
+                `,
+                'processing-time': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/Processing Time.png' alt='Processing Time' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600;">Processing Time</span>
+                    </div>
+                    <div style="margin-bottom: 18px;">Processing times vary by file size and complexity:</div>
+                    <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Small files.png' alt='Small files' style='height:28px;width:28px;'>
+                            <span><b>Small files (&lt; 1MB):</b> 5-15 seconds</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Medium files.png' alt='Medium files' style='height:28px;width:28px;'>
+                            <span><b>Medium files (1-10MB):</b> 30 seconds - 2 minutes</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Large files.png' alt='Large files' style='height:28px;width:28px;'>
+                            <span><b>Large files (10MB+):</b> 2-10 minutes</span>
+                        </li>
+                    </ul>
+                    <div style="margin-top:10px;font-size:0.97rem;opacity:0.85;">Premium users get priority processing for faster results!</div>
+                    `,
+                    'data-storage': `
+                        <div style="margin-bottom: 10px;">File storage duration by plan:</div>
+                        <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                            <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                                <img src='/assests/Free Plan.png' alt='Free Plan' style='height:28px;width:28px;'>
+                                <span><b>Free users:</b> Files deleted after 24 hours</span>
+                            </li>
+                            <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                                <img src='/assests/Standard Plan.png' alt='Standard Plan' style='height:28px;width:28px;'>
+                                <span><b>Standard users:</b> Files stored for 7 days</span>
+                            </li>
+                            <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                                <img src='/assests/Premium Plan.png' alt='Premium Plan' style='height:28px;width:28px;'>
+                                <span><b>Premium users:</b> Files stored for 30 days</span>
+                            </li>
+                        </ul>
+                        <div style="margin-bottom: 6px;">You can download your files anytime before expiration. We also send email reminders before deletion.</div>
+                    `,
+                        'bulk-conversion': `
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                                <img src='/assests/Bulk Conversion.png' alt='Bulk Conversion' style='height:32px;width:32px;'>
+                                <span style="font-size:1.2rem;font-weight:600;">Bulk Conversion</span>
+                            </div>
+                            <div style="margin-bottom: 18px;">Yes! Bulk conversion is available:</div>
+                            <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                                <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                                    <img src='/assests/Free Plan.png' alt='Free Plan' style='height:28px;width:28px;'>
+                                    <span><b>Free Plan:</b> Up to 3 files at once</span>
+                                </li>
+                                <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                                    <img src='/assests/Standard Plan.png' alt='Standard Plan' style='height:28px;width:28px;'>
+                                    <span><b>Standard Plan:</b> Up to 10 files at once</span>
+                                </li>
+                                <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                                    <img src='/assests/Premium Plan.png' alt='Premium Plan' style='height:28px;width:28px;'>
+                                    <span><b>Premium Plan:</b> Up to 50 files at once</span>
+                                </li>
+                            </ul>
+                            <div style="margin-top:10px;font-size:0.97rem;opacity:0.85;">Simply select multiple files when uploading, and DocShift will process them all together.</div>
+                            `,
+                
+                // Premium & Features
+                'premium-features': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/Premium features.png' alt='Premium Features' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600; color:#fff;">Premium Features</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">Premium features include:</div>
+                    <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/AI Tools.png' alt='AI Tools' style='height:28px;width:28px;'>
+                            <span><b>Advanced AI tools:</b> OCR, text extraction</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Priority processing.png' alt='Priority Processing' style='height:28px;width:28px;'>
+                            <span><b>Priority processing:</b> 3x faster</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Batch processing.png' alt='Batch Processing' style='height:28px;width:28px;'>
+                            <span><b>Batch processing:</b> Up to 50 files</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Extended storage.png' alt='Extended Storage' style='height:28px;width:28px;'>
+                            <span><b>Extended storage:</b> 30 days</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Email delivery.png' alt='Email Delivery' style='height:28px;width:28px;'>
+                            <span><b>Email delivery:</b> of converted files</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Advanced security.png' alt='Security' style='height:28px;width:28px;'>
+                            <span><b>Advanced security options</b></span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Priority customer.png' alt='Priority Support' style='height:28px;width:28px;'>
+                            <span><b>Priority customer support</b></span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Watermark removal.png' alt='Watermark Removal' style='height:28px;width:28px;'>
+                            <span><b>Watermark removal</b></span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Usage analytics.png' alt='Usage Analytics' style='height:28px;width:28px;'>
+                            <span><b>Usage analytics</b></span>
+                        </li>
+                    </ul>
+                `,
+                'ai-tools': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/ai.png' alt='AI Tools' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600;">AI-powered Tools</span>
+                    </div>
+                    <div style="margin-bottom: 18px;">Our AI-powered tools include:</div>
+                    <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/OCR.png' alt='OCR' style='height:28px;width:28px;'>
+                            <span><b>OCR:</b> Extract text from images and scanned PDFs</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Text Summarization.png' alt='Text Summarization' style='height:28px;width:28px;'>
+                            <span><b>Text Summarization:</b> Get key points from documents</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Document Classification.png' alt='Document Classification' style='height:28px;width:28px;'>
+                            <span><b>Document Classification:</b> Auto-categorize your files</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Content Analysis.png' alt='Content Analysis' style='height:28px;width:28px;'>
+                            <span><b>Content Analysis:</b> Detect and highlight important information</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Language Detection.png' alt='Language Detection' style='height:28px;width:28px;'>
+                            <span><b>Language Detection:</b> Identify document languages</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Smart Editing.png' alt='Smart Editing' style='height:28px;width:28px;'>
+                            <span><b>Smart Editing:</b> AI-assisted document improvements</span>
+                        </li>
+                    </ul>
+                    <div style="margin-top:10px;font-size:0.97rem;opacity:0.85;">We are always adding new AI features!</div>
+                    `,
+                
+                // Usage & Access
+                'download-files': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/Download Files.png' alt='Download Files' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600; color:#fff;">Download Files</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">To download converted files:</div>
+                    <ol style="margin-left: 20px; margin-bottom: 0.5em;">
+                        <li>Wait for processing to complete</li>
+                        <li>Click the "Download" button</li>
+                        <li>Files automatically save to your Downloads folder</li>
+                    </ol>
+                    <div style="margin-bottom: 6px;">Alternatively:</div>
+                    <ul style="margin-left: 20px; margin-bottom: 0.5em;">
+                        <li>Use the "Email to me" option</li>
+                        <li>Access files from your Dashboard history</li>
+                        <li>Download via the mobile app</li>
+                    </ul>
+                `,
+                'quality-loss': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/Quality Loss.png' alt='Quality Loss' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600; color:#fff;">Quality Loss</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">DocShift maintains document quality:</div>
+                    <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Check.png' alt='Check' style='height:22px;width:22px;'>
+                            <span>Lossless conversion for most formats</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Check.png' alt='Check' style='height:22px;width:22px;'>
+                            <span>Original formatting preserved</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Check.png' alt='Check' style='height:22px;width:22px;'>
+                            <span>High-resolution image retention</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Check.png' alt='Check' style='height:22px;width:22px;'>
+                            <span>Font and styling maintained</span>
+                        </li>
+                    </ul>
+                    <div style="margin-bottom: 6px;">Note: Some format combinations may have minor adjustments due to technical limitations. We always aim for the highest quality possible.</div>
+                `,
+                'mobile-access': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/Mobile Access.png' alt='Mobile Access' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600; color:#fff;">Mobile Access</span>
+                    </div>
+                    <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Responsive.png' alt='Responsive Web' style='height:22px;width:22px;'>
+                            <span>Responsive web interface works on all devices</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Dedicated.png' alt='Mobile Apps' style='height:22px;width:22px;'>
+                            <span>Dedicated mobile apps (iOS & Android) coming soon</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Browser.png' alt='Cloud' style='height:22px;width:22px;'>
+                            <span>All features available on mobile browsers</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Sync.png' alt='Sync' style='height:22px;width:22px;'>
+                            <span>Sync across all your devices</span>
+                        </li>
+                    </ul>
+                    <div style="margin-bottom: 6px;">Optimized for touch interfaces with easy file upload and download.</div>
+                `,
+                'api-access': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/API Access.png' alt='API Access' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600;">API Access</span>
+                    </div>
+                    <div style="margin-bottom: 18px;">API access is available for developers:</div>
+                    <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Premium Plan.png' alt='Premium Plan' style='height:28px;width:28px;'>
+                            <span><b>Premium Plan:</b> Basic API access (1000 calls/month)</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Enterprise Plan.png' alt='Enterprise Plan' style='height:28px;width:28px;'>
+                            <span><b>Enterprise Plan:</b> Full API access (unlimited calls)</span>
+                        </li>
+                    </ul>
+                    <div style="margin-bottom: 10px; font-size: 1.05rem; font-weight: 500;">API features:</div>
+                    <ul style="list-style:disc;padding-left:22px;margin:0 0 10px 0;">
+                        <li style="margin-bottom:8px;">Document conversion endpoints</li>
+                        <li style="margin-bottom:8px;">Batch processing capabilities</li>
+                        <li style="margin-bottom:8px;">Webhook notifications</li>
+                        <li style="margin-bottom:8px;">Comprehensive documentation</li>
+                        <li style="margin-bottom:8px;">SDKs for popular languages</li>
+                    </ul>
+                    `, 
+                'technical-support': `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/Technical Support.png' alt='Technical Support' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600;">Technical Support</span>
+                    </div>
+                    <div style="margin-bottom: 18px;">Get technical support through:</div>
+                    <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Email.png' alt='Email' style='height:28px;width:28px;'>
+                            <span><b>Email:</b> support@docshift.com (24-48h response)</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Live Chat.png' alt='Live Chat' style='height:28px;width:28px;'>
+                            <span><b>Live Chat:</b> Available for Premium users</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Help Center.png' alt='Help Center' style='height:28px;width:28px;'>
+                            <span><b>Help Center:</b> Comprehensive guides and tutorials</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Video Tutorials.png' alt='Video Tutorials' style='height:28px;width:28px;'>
+                            <span><b>Video Tutorials:</b> Step-by-step instructions</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Phone Support.png' alt='Phone Support' style='height:28px;width:28px;'>
+                            <span><b>Phone Support:</b> Available for Enterprise customers</span>
+                        </li>
+                    </ul>
+                    <div style="margin-top:10px;font-size:0.97rem;opacity:0.85;">Premium users get priority support with faster response times!</div>
+                    `,
+            };
+            
+            let content = faqContent[topic];
+            if (topic === 'file-formats') {
+                content = `
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                        <img src='/assests/File Format.png' alt='File Formats' style='height:32px;width:32px;'>
+                        <span style="font-size:1.2rem;font-weight:600;">File Formats</span>
+                    </div>
+                    <div style="margin-bottom: 18px;">DocShift supports these formats:</div>
+                    <ul style="list-style:none;padding:0;margin:0 0 10px 0;">
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Documents.png' alt='Documents' style='height:28px;width:28px;'>
+                            <span><b>Documents:</b> PDF, DOCX, DOC, TXT, RTF, ODT</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Spreadsheets.png' alt='Spreadsheets' style='height:28px;width:28px;'>
+                            <span><b>Spreadsheets:</b> XLSX, XLS, CSV, ODS</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Presentation.png' alt='Presentations' style='height:28px;width:28px;'>
+                            <span><b>Presentations:</b> PPTX, PPT, ODP</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Images.png' alt='Images' style='height:28px;width:28px;'>
+                            <span><b>Images:</b> JPG, PNG, GIF, BMP, TIFF, WEBP</span>
+                        </li>
+                        <li style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                            <img src='/assests/Archive.png' alt='Archives' style='height:28px;width:28px;'>
+                            <span><b>Archives:</b> ZIP, RAR</span>
+                        </li>
+                    </ul>
+                    <div style="margin-top:10px;font-size:0.97rem;opacity:0.85;">We regularly add support for new formats!</div>
+                `;
+            }
+            if (content) {
+                // Modal container
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                    backdrop-filter: blur(5px);
+                `;
+                // Modal content
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = `
+                    background: linear-gradient(-53deg, #31004A, #14033D);
+                    padding: 24px 40px;
+                    border-radius: 15px;
+                    width: 690px;
+                    min-width: 248px;
+                    max-width: 90vw;
+                    height: auto;
+                    max-height: none;
+                    overflow-y: visible;
+                    color: white;
+                    font-family: 'Inter', Arial, sans-serif;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                    position: relative;
+                    margin: 20px;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: flex-start;
+                `;
+                // Custom close icon (cross in a circle)
+                let modalInnerHtml = `
+                    <button onclick="this.parentElement.parentElement.remove()" style="
+                        position: absolute;
+                        top: 15px;
+                        right: 15px;
+                        width: 36px;
+                        height: 36px;
+                        border-radius: 50%;
+                        background: #2D1850;
+                        border: 2px solid #fff;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #fff;
+                        font-size: 20px;
+                        cursor: pointer;
+                    ">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <line x1="6" y1="6" x2="12" y2="12" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="12" y1="6" x2="6" y2="12" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                `;
+                // Only add the auto-generated heading if not 'reset-password' or 'download-files'
+                if (topic !== 'reset-password' && topic !== 'download-files' && topic !== 'file-size-limit') {
+                    // Removed duplicate purple heading. Heading is now only in the content HTML.
+                }
+                modalInnerHtml += `<div style="line-height: 1.6; white-space: pre-line; font-size: 0.95rem;">${content}</div>`;
+                modalContent.innerHTML = modalInnerHtml;
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+                // Close modal when clicking outside
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+            } else {
+                alert('FAQ content not available');
+            }
+        }
+
+        // Contact functions
+        function contactUs() {
+            // Implement phone contact logic
+            console.log('Contact us clicked');
+            window.location.href = 'tel:+919876543210';
+        }
+
+        function emailUs() {
+            // Implement email contact logic
+            console.log('Email us clicked');
+            window.location.href = 'mailto:support@docshift.com?subject=Support Request&body=Hello DocShift Support Team,';
+        }
+
+        function chatWithUs() {
+            // Implement chat functionality
+            console.log('Chat with us clicked');
+            alert('Chat feature coming soon! Please use email or phone for now.');
+        }
+
+        function sendFeedback() {
+            // Implement feedback functionality
+            console.log('Send feedback clicked');
+            alert('Feedback feature coming soon! Please use email for now.');
+        }
+
+        // Search on Enter key
+        document.getElementById('helpSearch').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchHelp();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Successful - DocShift</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+    <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+    <style>
+        :root {
+            --bg-main: #000000;
+            --tool-gradient: linear-gradient(-53deg, #31004A, #14033D);
+            --tool-radius: 20px;
+            --card-shadow: 0 4px 24px 0 rgba(40, 25, 67, 0.14);
+            --tool-shadow-hover: 0 8px 38px 0 rgba(40, 25, 67, 0.34);
+            --white: #fff;
+            --success: #28a745;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+            font-family: 'Inter', Arial, sans-serif;
+            color: var(--white);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-container img {
+            height: 80px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .container {
+            background: var(--tool-gradient);
+            padding: 40px 35px;
+            max-width: 500px;
+            width: 100%;
+            border-radius: var(--tool-radius);
+            box-shadow: var(--card-shadow);
+            text-align: center;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            box-shadow: var(--tool-shadow-hover);
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            animation: checkmark 0.6s ease-in-out;
+        }
+
+        .success-icon::after {
+            content: '✓';
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+        }
+
+        @keyframes checkmark {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        .message {
+            background-color: rgba(40, 167, 69, 0.2);
+            border: 1px solid var(--success);
+            color: #90ee90;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 4px solid #610094;
+            text-align: left;
+        }
+
+        .info-box h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: var(--white);
+        }
+
+        .info-box ul {
+            margin: 0;
+            padding-left: 20px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .info-box li {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #610094, #31004A);
+            border: none;
+            border-radius: 10px;
+            color: var(--white);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(97, 0, 148, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .verification-status {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid var(--success);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .verification-status .status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .verification-status .status-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .verified-badge {
+            background: var(--success);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .footer-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <img src="/static/logo.png" alt="DocShift Logo">
+    </div>
+    <div class="container">
+        <div class="success-icon"></div>
+        
+        <h1>Registration Successful!</h1>
+        
+        {% if message %}
+        <div class="message">{{ message }}</div>
+        {% endif %}
+        
+        <div class="verification-status">
+            <div class="status-item">
+                <span>Phone Number</span>
+                <span class="verified-badge">✓ Verified</span>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3>🎉 Welcome to DocShift!</h3>
+            <ul>
+                <li>Your company account has been created successfully</li>
+                <li>Your phone number has been verified</li>
+                <li>You can now log in and start using our document tools</li>
+                <li>Access powerful PDF tools, document conversion, and more</li>
+            </ul>
+        </div>
+        
+        <button onclick="window.location.href='/login'">
+            Proceed to Login
+        </button>
+        
+        <div class="footer-text">
+            Ready to transform your document workflow with DocShift!
+        </div>
+    </div>
+
+    <script>
+        // Auto-redirect to login after 5 seconds
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 5000);
+    </script>
+</body>
+</html>

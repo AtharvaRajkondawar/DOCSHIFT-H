@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upgrade Plan - DocShift</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+    
+    <style>
+        :root {
+            --bg-main: #000000;
+            --tool-gradient: linear-gradient(-53deg, #31004A, #14033D);
+            --tool-radius: 20px;
+            --card-shadow: 0 4px 24px 0 rgba(40, 25, 67, 0.14);
+            --tool-shadow-hover: 0 8px 38px 0 rgba(40, 25, 67, 0.34);
+            --white: #fff;
+            --purple-light: #8B5CF6;
+            --purple-dark: #5B21B6;
+            --standard-gradient: linear-gradient(135deg, #8B5CF6, #5B21B6);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 40px;
+            position: relative;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .back-arrow {
+            color: var(--white);
+            font-size: 24px;
+            cursor: pointer;
+            margin-right: 20px;
+            text-decoration: none;
+            transition: transform 0.2s ease;
+        }
+
+        .back-arrow:hover {
+            transform: translateX(-3px);
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .nav-link {
+            color: var(--white);
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+        }
+
+        .nav-link:hover {
+            opacity: 1;
+        }
+
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Title Section */
+        .title-section {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .main-title {
+            font-size: 56px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #8B5CF6, #E879F9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+
+        /* Plans Grid */
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        /* Plan Cards */
+        .plan-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px 32px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .plan-card:hover {
+            transform: translateY(-8px);
+        }
+
+        /* Free Trial Plan Hover */
+        .plan-card:not(.popular):hover {
+            box-shadow: 0 20px 40px rgba(240, 243, 241, 1);
+            border-color: rgba(252, 252, 252, 0.5);
+        }
+
+        /* Standard Plan (Popular) Hover */
+        .plan-card.popular:hover {
+            transform: scale(1.05) translateY(-8px);
+            box-shadow: 0 20px 40px #bfb368;
+            border-color: rgba(255, 215, 0, 0.6);
+        }
+
+        /* Premium Plan Hover */
+        .plan-card:last-child:hover {
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4);
+            border-color: rgba(139, 92, 246, 0.6);
+        }
+
+        .plan-card.popular {
+            background: linear-gradient(135deg, #31004A 0%, #52007C 50%, #7500B0 100%);
+            border-color: var(--purple-light);
+            transform: scale(1.05);
+        }
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* Plan Title */
+        .plan-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--white);
+        }
+
+        .plan-card.popular .plan-title {
+            color: #FFD700;
+        }
+
+        /* Plan Price */
+        .plan-price {
+            margin-bottom: 32px;
+        }
+
+        .price-amount {
+            font-size: 64px;
+            font-weight: 700;
+            color: var(--white);
+            line-height: 1;
+        }
+
+        .price-period {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            margin-left: 4px;
+        }
+
+        /* Plan Features */
+        .plan-features {
+            margin-bottom: 40px;
+            text-align: left;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.5;
+        }
+
+        .feature-item::before {
+            content: "•";
+            color: var(--purple-light);
+            font-size: 20px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .plan-card.popular .feature-item::before {
+            color: #FFD700;
+        }
+
+        /* Get Started Button */
+        .get-started-btn {
+            width: 100%;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--purple-light), var(--purple-dark));
+            border: none;
+            border-radius: 12px;
+            color: var(--white);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .get-started-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        .plan-card.popular .get-started-btn {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            font-weight: 700;
+        }
+
+        .plan-card.popular .get-started-btn:hover {
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Premium Badge */
+        .premium-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 8px;
+        }
+
+        .diamond-icon {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #00D4FF, #5B21B6);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .diamond-icon::before {
+            content: "💎";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 60px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .plans-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+                max-width: 500px;
+            }
+
+            .plan-card.popular {
+                transform: none;
+            }
+
+            .plan-card.popular:hover {
+                transform: translateY(-8px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+            }
+
+            .logo {
+                height: 45px;
+            }
+
+            .main-title {
+                font-size: 40px;
+            }
+
+            .subtitle {
+                font-size: 16px;
+            }
+
+            .main-content {
+                padding: 40px 15px;
+            }
+
+            .plan-card {
+                padding: 32px 24px;
+            }
+
+            .price-amount {
+                font-size: 48px;
+            }
+
+            .header-right {
+                gap: 16px;
+            }
+
+            .nav-link {
+                font-size: 14px;
+            }
+
+            .profile-icon {
+                width: 32px;
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-title {
+                font-size: 32px;
+            }
+
+            .plan-title {
+                font-size: 24px;
+            }
+
+            .price-amount {
+                font-size: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <a href="/" class="back-arrow">←</a>
+            <img src="/static/logo.png" alt="DocShift" class="logo" draggable="false" />
+        </div>
+        <div class="header-right">
+            <a href="/" class="nav-link">Home</a>
+            <img src="{{ user.profile_picture or '/static/user-profile.png' }}" 
+                 alt="User Profile" 
+                 class="profile-icon" 
+                 draggable="false" />
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Title Section -->
+        <div class="title-section">
+            <h1 class="main-title">Choose your plan</h1>
+            <p class="subtitle">Unlock endless possibilities</p>
+        </div>
+
+        <!-- Plans Grid -->
+        <div class="plans-grid">
+            <!-- Free Trial Plan -->
+            <div class="plan-card">
+                <h2 class="plan-title">Free Trail</h2>
+                <div class="plan-price">
+                    <span class="price-amount">$0</span>
+                </div>
+                <div class="plan-features">
+                    <div class="feature-item">7 days trail</div>
+                    <div class="feature-item">Upto 2 users</div>
+                    <div class="feature-item">10 tool available</div>
+                    <div class="feature-item">Audio Quality Stereo</div>
+                </div>
+                <a href="#" class="get-started-btn" data-plan="Free Trail" onclick="selectPlan(event, 'Free Trail')">Get Started</a>
+            </div>
+
+            <!-- Standard Plan (Popular) -->
+            <div class="plan-card popular">
+                <div class="popular-badge">Popular</div>
+                <h2 class="plan-title">Standard</h2>
+                <div class="plan-price">
+                    <span class="price-amount">$30</span>
+                    <span class="price-period">/month</span>
+                </div>
+                <div class="plan-features">
+                    <div class="feature-item">1 month experience</div>
+                    <div class="feature-item">Upto 10 users</div>
+                    <div class="feature-item">16 tool available</div>
+                    <div class="feature-item">Audio Quality Dolby 5.1</div>
+                    <div class="feature-item">AI tools</div>
+                </div>
+                <a href="#" class="get-started-btn" data-plan="Standard" onclick="selectPlan(event, 'Standard')">Get Started</a>
+            </div>
+
+            <!-- Premium Plan -->
+            <div class="plan-card">
+                <h2 class="plan-title">
+                    Premium
+                    <span class="premium-badge">
+                        <span class="diamond-icon"></span>
+                    </span>
+                </h2>
+                <div class="plan-price">
+                    <span class="price-amount">$140</span>
+                    <span class="price-period">/year</span>
+                </div>
+                <div class="plan-features">
+                    <div class="feature-item">1 year experience</div>
+                    <div class="feature-item">Upto 25+ users</div>
+                    <div class="feature-item">16 tool available</div>
+                    <div class="feature-item">Audio Quality Dolby 5.1</div>
+                    <div class="feature-item">AI tools</div>
+                </div>
+                <a href="#" class="get-started-btn" data-plan="Premium" onclick="selectPlan(event, 'Premium')">Get Started</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        © 2025 TARS DocShift. All rights reserved.
+    </div>
+
+    <script>
+        // Add any interactive functionality here if needed
+        console.log('Upgrade Plan page loaded');
+
+        // Handle plan selection
+        function selectPlan(event, planName) {
+            event.preventDefault();
+            
+            // Show loading state
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'Processing...';
+            button.disabled = true;
+            
+            // Send plan selection to server
+            fetch('/select_plan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    plan: planName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    showPlanMessage(`Successfully upgraded to ${planName} plan!`, 'success');
+                    
+                    // Update button text
+                    button.textContent = 'Selected ✓';
+                    button.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                    
+                    // Disable other buttons
+                    document.querySelectorAll('.get-started-btn').forEach(btn => {
+                        if (btn !== button) {
+                            btn.disabled = true;
+                            btn.style.opacity = '0.5';
+                        }
+                    });
+                    
+                    // Redirect to profile page after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/profile';
+                    }, 2000);
+                } else {
+                    // Show error message
+                    showPlanMessage(data.error || 'Failed to select plan. Please try again.', 'error');
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showPlanMessage('An error occurred. Please try again.', 'error');
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+
+        // Show plan selection message
+        function showPlanMessage(message, type) {
+            // Remove existing messages
+            const existingMessages = document.querySelectorAll('.plan-message');
+            existingMessages.forEach(msg => msg.remove());
+
+            // Create new message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `plan-message`;
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 8px;
+                font-weight: 600;
+                z-index: 10000;
+                animation: slideIn 0.3s ease-out;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+                ${type === 'success' 
+                    ? 'background: linear-gradient(135deg, #28a745, #20c997); color: white;' 
+                    : 'background: linear-gradient(135deg, #dc3545, #c82333); color: white;'
+                }
+            `;
+            messageDiv.textContent = message;
+
+            // Add animation CSS
+            if (!document.querySelector('#planMessageStyles')) {
+                const style = document.createElement('style');
+                style.id = 'planMessageStyles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    @keyframes slideOut {
+                        from { transform: translateX(0); opacity: 1; }
+                        to { transform: translateX(100%); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            document.body.appendChild(messageDiv);
+
+            // Remove message after 5 seconds
+            setTimeout(() => {
+                messageDiv.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.remove();
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Add hover effects and animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const planCards = document.querySelectorAll('.plan-card');
+            
+            planCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    if (this.classList.contains('popular')) {
+                        this.style.transform = 'scale(1.05)';
+                    } else {
+                        this.style.transform = 'translateY(0) scale(1)';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

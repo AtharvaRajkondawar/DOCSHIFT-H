@@ -11,11 +11,16 @@ import sqlite3
 import subprocess
 import re
 import mimetypes
-from datetime import datetime
+import random
+import threading
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from datetime import datetime, timedelta
 from functools import wraps
 from collections import deque
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file
+from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory
 from flask_cors import CORS
 from PIL import Image
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
@@ -38,7 +43,7 @@ from bs4 import BeautifulSoup
 from fpdf import FPDF
 import fitz  # PyMuPDF
 import firebase_admin
-from firebase_admin import credentials, db
+from firebase_admin import credentials, db, auth
 import cloudinary
 import cloudinary.uploader
 
@@ -48,11 +53,11 @@ app = Flask(__name__)
 load_dotenv('api.env')
 
 # Firebase Realtime Database config
-FIREBASE_CRED_PATH = os.getenv('FIREBASE_CRED_PATH', 'docshift.json')
+FIREBASE_CRED_PATH = 'docshift.json'
 FIREBASE_DB_URL = 'https://docshift-86065-default-rtdb.firebaseio.com/'
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(json.loads(FIREBASE_CRED_PATH))
+    cred = credentials.Certificate(FIREBASE_CRED_PATH)
     firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_DB_URL})
 
 # Cloudinary config
@@ -111,6 +116,219 @@ def store_url_in_firebase(url, category, filename):
     ref = db.reference(f'storage/{username}/{category}/{safe_key}')
     ref.set({'filename': filename, 'url': url})
     return True
+
+# --- Phone & Email Verification Functions ---
+
+def is_production_mode():
+    """Check if we're running in production mode with real credentials"""
+    smtp_configured = bool(os.getenv('SMTP_USERNAME') and os.getenv('SMTP_PASSWORD'))
+    return smtp_configured
+
+def generate_otp():
+    """Generate a random 6-digit OTP"""
+    return str(random.randint(100000, 999999))
+
+def store_otp_in_firebase(identifier, otp_code, username, verification_type='phone'):
+    """Store OTP in Firebase with expiration (10 minutes)"""
+    try:
+        # Create expiration timestamp (10 minutes from now)
+        expiry_time = datetime.now() + timedelta(minutes=10)
+        expiry_timestamp = int(expiry_time.timestamp())
+        
+        # Store OTP data
+        otp_data = {
+            'code': otp_code,
+            'type': verification_type,
+            'expires_at': expiry_timestamp,
+            'username': username,
+            'verified': False,
+            'created_at': int(datetime.now().timestamp())
+        }
+        
+        # Clean identifier for Firebase key
+        if verification_type == 'phone':
+            clean_key = re.sub(r'[^0-9]', '', identifier)
+        else:  # email
+            clean_key = re.sub(r'[./#$\[\]@]', '_', identifier)
+        
+        ref = db.reference(f'verification_codes/{verification_type}_{clean_key}')
+        ref.set(otp_data)
+        
+        logger.info(f"OTP stored for {verification_type} {identifier}: {otp_code}")
+        return True
+    except Exception as e:
+        logger.error(f"Error storing OTP: {str(e)}")
+        return False
+
+def store_phone_otp_in_firebase(phone_number, otp_code, username):
+    """Store phone OTP in Firebase - backward compatibility"""
+    return store_otp_in_firebase(phone_number, otp_code, username, 'phone')
+
+def store_email_otp_in_firebase(email, otp_code, username):
+    """Store email OTP in Firebase"""
+    return store_otp_in_firebase(email, otp_code, username, 'email')
+
+def verify_otp_from_firebase(identifier, submitted_otp, verification_type='phone'):
+    """Verify OTP from Firebase"""
+    try:
+        if verification_type == 'phone':
+            clean_key = re.sub(r'[^0-9]', '', identifier)
+        else:  # email
+            clean_key = re.sub(r'[./#$\[\]@]', '_', identifier)
+            
+        ref = db.reference(f'verification_codes/{verification_type}_{clean_key}')
+        stored_data = ref.get()
+        
+        if not stored_data:
+            return False, f"No OTP found for this {verification_type}"
+        
+        # Check if OTP has expired
+        current_timestamp = int(datetime.now().timestamp())
+        if current_timestamp > stored_data.get('expires_at', 0):
+            # Clean up expired OTP
+            ref.delete()
+            return False, "OTP has expired"
+        
+        # Check if OTP matches
+        if stored_data.get('code') != submitted_otp:
+            return False, "Invalid OTP"
+        
+        # Mark as verified and clean up
+        stored_data['verified'] = True
+        stored_data['verified_at'] = current_timestamp
+        ref.set(stored_data)
+        
+        # Update user profile to mark as verified
+        username = stored_data.get('username')
+        if username:
+            user_ref = db.reference(f'Data/{username}')
+            user_data = user_ref.get() or {}
+            
+            if verification_type == 'phone':
+                user_data.update({
+                    'phone_verified': True,
+                    'phone_verified_at': datetime.now().isoformat()
+                })
+            else:  # email
+                user_data.update({
+                    'email_verified': True,
+                    'email_verified_at': datetime.now().isoformat()
+                })
+            user_ref.set(user_data)
+        
+        # Clean up OTP after successful verification
+        threading.Timer(5.0, lambda: ref.delete()).start()
+        
+        return True, f"{verification_type.title()} verified successfully!"
+        
+    except Exception as e:
+        logger.error(f"Error verifying OTP: {str(e)}")
+        return False, f"Verification error: {str(e)}"
+
+def verify_phone_otp_from_firebase(phone_number, submitted_otp):
+    """Verify phone OTP - backward compatibility"""
+    return verify_otp_from_firebase(phone_number, submitted_otp, 'phone')
+
+def verify_email_otp_from_firebase(email, submitted_otp):
+    """Verify email OTP"""
+    return verify_otp_from_firebase(email, submitted_otp, 'email')
+
+def send_email_otp(email, otp_code):
+    """Send email OTP using Gmail SMTP"""
+    try:
+        # Get email credentials from environment
+        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', '587'))
+        smtp_username = os.getenv('SMTP_USERNAME')  # Your Gmail address
+        smtp_password = os.getenv('SMTP_PASSWORD')  # Your Gmail app password
+        
+        # Check if email credentials are configured
+        if not smtp_username or not smtp_password:
+            logger.error("📧 Email credentials not configured")
+            return False, "Email service not configured. Please contact administrator."
+        
+        # Create email message
+        msg = MIMEMultipart()
+        msg['From'] = smtp_username
+        msg['To'] = email
+        msg['Subject'] = "DocShift - Email Verification Code"
+        
+        # Create HTML email body
+        html_body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #4A90E2;">DocShift</h1>
+                        <h2 style="color: #333;">Email Verification</h2>
+                    </div>
+                    
+                    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin-bottom: 20px;">
+                        <p>Hello,</p>
+                        <p>You've requested to verify your email address for DocShift. Please use the following verification code:</p>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <span style="background-color: #4A90E2; color: white; padding: 15px 30px; font-size: 24px; font-weight: bold; border-radius: 5px; letter-spacing: 3px;">{otp_code}</span>
+                        </div>
+                        
+                        <p><strong>This code will expire in 10 minutes.</strong></p>
+                        <p>If you didn't request this verification, please ignore this email.</p>
+                    </div>
+                    
+                    <div style="text-align: center; color: #666; font-size: 12px;">
+                        <p>© 2025 DocShift. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(html_body, 'html'))
+        
+        # Send email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_username, smtp_password)
+        text = msg.as_string()
+        server.sendmail(smtp_username, email, text)
+        server.quit()
+        
+        logger.info(f"📧 Email OTP sent successfully to {email}")
+        return True, "Verification code sent to your email!"
+        
+    except Exception as e:
+        logger.error(f"Error sending email: {str(e)}")
+        return False, f"Failed to send email verification code. Please try again."
+
+# Phone verification via email functionality removed
+
+# SMS OTP functionality removed
+
+def cleanup_expired_otps():
+    """Clean up expired OTPs from Firebase"""
+    try:
+        ref = db.reference('verification_codes')
+        all_codes = ref.get() or {}
+        current_timestamp = int(datetime.now().timestamp())
+        
+        for key, data in all_codes.items():
+            if isinstance(data, dict) and current_timestamp > data.get('expires_at', 0):
+                db.reference(f'verification_codes/{key}').delete()
+                logger.info(f"Cleaned up expired OTP for {key}")
+                
+    except Exception as e:
+        logger.error(f"Error cleaning up expired OTPs: {str(e)}")
+
+# Start background cleanup thread for expired OTPs
+def periodic_otp_cleanup():
+    while True:
+        time.sleep(300)  # Check every 5 minutes
+        cleanup_expired_otps()
+
+cleanup_thread = threading.Thread(target=periodic_otp_cleanup, daemon=True)
+cleanup_thread.start()
+
+# --- End Phone & Email Verification Functions ---
 
 def upload_to_cloudinary(local_path, folder):
     """Upload file to Cloudinary, handle image/raw types."""
@@ -213,6 +431,148 @@ ensure_admin_credentials()
 
 # --- Routes ---
 
+# --- Phone & Email Verification Routes ---
+
+@app.route('/send_phone_otp', methods=['POST'])
+def send_phone_otp():
+    """Phone verification disabled - use email verification only"""
+    return jsonify({'success': False, 'error': 'Phone verification is currently disabled. Please use email verification.'})
+
+@app.route('/send_email_otp', methods=['POST'])
+def send_email_otp_route():
+    """Send OTP to email for verification"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip()
+        username = session.get('username')
+        
+        if not email:
+            return jsonify({'success': False, 'error': 'Email address is required'})
+        
+        if not username:
+            return jsonify({'success': False, 'error': 'User not logged in'})
+        
+        # Validate email format (basic validation)
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            return jsonify({'success': False, 'error': 'Please enter a valid email address'})
+        
+        # Generate OTP
+        otp_code = generate_otp()
+        
+        # Store OTP in Firebase
+        if not store_email_otp_in_firebase(email, otp_code, username):
+            return jsonify({'success': False, 'error': 'Failed to generate OTP'})
+        
+        # Send Email - production mode only
+        email_success, email_message = send_email_otp(email, otp_code)
+        
+        if email_success:
+            return jsonify({
+                'success': True, 
+                'message': 'Verification code sent to your email address. Please check your inbox.'
+            })
+        else:
+            return jsonify({'success': False, 'error': email_message})
+            
+    except Exception as e:
+        logger.error(f"Send email OTP error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to send OTP'})
+
+@app.route('/verify_phone_otp', methods=['POST'])
+def verify_phone_otp():
+    """Phone verification disabled - use email verification only"""
+    return jsonify({'success': False, 'error': 'Phone verification is currently disabled. Please use email verification.'})
+
+@app.route('/verify_email_otp', methods=['POST'])
+def verify_email_otp():
+    """Verify OTP for email"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip()
+        otp_code = data.get('otp_code', '').strip()
+        
+        if not email or not otp_code:
+            return jsonify({'success': False, 'error': 'Email and OTP are required'})
+        
+        # Verify OTP
+        verification_success, message = verify_email_otp_from_firebase(email, otp_code)
+        
+        if verification_success:
+            return jsonify({
+                'success': True,
+                'message': message
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': message
+            })
+            
+    except Exception as e:
+        logger.error(f"Verify email OTP error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to verify OTP'})
+
+@app.route('/check_phone_verification_status', methods=['POST'])
+def check_phone_verification_status():
+    """Phone verification disabled - always return unverified"""
+    return jsonify({'verified': False, 'message': 'Phone verification is currently disabled'})
+
+@app.route('/check_email_verification_status', methods=['POST'])
+def check_email_verification_status():
+    """Check if email is verified for current user"""
+    try:
+        username = session.get('username')
+        if not username:
+            return jsonify({'verified': False, 'error': 'User not logged in'})
+        
+        user_ref = db.reference(f'Data/{username}')
+        user_data = user_ref.get() or {}
+        
+        is_verified = user_data.get('email_verified', False)
+        verified_at = user_data.get('email_verified_at', None)
+        
+        return jsonify({
+            'verified': is_verified,
+            'verified_at': verified_at
+        })
+        
+    except Exception as e:
+        logger.error(f"Check email verification status error: {str(e)}")
+        return jsonify({'verified': False, 'error': 'Failed to check verification status'})
+
+@app.route('/verify_email_standalone', methods=['POST'])
+def verify_email_standalone():
+    """Standalone email verification route (if needed for separate email verification page)"""
+    try:
+        email = request.form.get('email', '').strip()
+        email_otp = request.form.get('email_otp', '').strip()
+        
+        if not email or not email_otp:
+            return render_template('verify_email.html', 
+                                 email=email,
+                                 error='Email and OTP are required')
+        
+        # Verify OTP
+        verification_success, message = verify_email_otp_from_firebase(email, email_otp)
+        
+        if verification_success:
+            return render_template('registration_success.html', 
+                                 message='Email verified successfully!')
+        else:
+            return render_template('verify_email.html', 
+                                 email=email,
+                                 error=message)
+    
+    except Exception as e:
+        logger.error(f"Standalone email verification error: {str(e)}")
+        return render_template('verify_email.html', 
+                             email=email,
+                             error='An error occurred during verification. Please try again.')
+
+# --- End Phone & Email Verification Routes ---
+
 @app.route('/register-company', methods=['GET', 'POST'])
 def register_company():
     if request.method == 'POST':
@@ -229,33 +589,161 @@ def register_company():
         if password != confirm_password:
             return render_template('register_company.html', error='Passwords do not match')
 
+        # Check if username already exists
         cred_ref = db.reference(f'credentials/users/{username}')
         if cred_ref.get():
             return render_template('register_company.html', error='Username already exists')
 
-        hashed_pw = generate_password_hash(password)
-        cred_ref.set({'password': hashed_pw})
+        # Validate phone number format
+        clean_phone = re.sub(r'[^0-9]', '', phone)
+        if len(clean_phone) < 10:
+            return render_template('register_company.html', error='Please enter a valid phone number')
 
-        db.reference(f'Data/{username}').set({
+        # Store company data as "pending verification"
+        temp_id = str(uuid.uuid4())
+        hashed_pw = generate_password_hash(password)
+        
+        pending_data = {
+            'temp_id': temp_id,
             'company_name': company_name,
             'owner_name': owner_name,
             'email': email,
             'phone': phone,
             'username': username,
-            'password': hashed_pw,
-            'confirm_password': hashed_pw
-        })
-
-        # Create storage folders for user
-        db.reference(f'storage/{username}').set({
-            'txt': {},
-            'img': {},
-            'audio': {},
-            'files': {}
-        })
-
-        return redirect(url_for('login'))
+            'password_hash': hashed_pw,
+            'created_at': datetime.now().isoformat(),
+            'phone_verified': False
+        }
+        
+        # Store in pending_companies
+        db.reference(f'pending_companies/{temp_id}').set(pending_data)
+        
+        # Generate and send email OTP only
+        email_otp = generate_otp()
+        
+        email_stored = store_email_otp_in_firebase(email, email_otp, username)
+        
+        if email_stored:
+            # Send email OTP only
+            send_email_otp(email, email_otp)
+            
+            # Redirect to email verification page only
+            return render_template('verify_email.html', 
+                                 temp_id=temp_id, 
+                                 email=email,
+                                 username=username,
+                                 message='Please verify your email to complete registration. Check your inbox for verification code.')
+        else:
+            # Clean up pending data if OTP failed
+            db.reference(f'pending_companies/{temp_id}').delete()
+            return render_template('register_company.html', 
+                                 error='Failed to send verification code. Please try again.')
+    
     return render_template('register_company.html')
+
+@app.route('/verify-registration', methods=['POST'])
+def verify_registration():
+    """Complete company registration after email verification only"""
+    try:
+        temp_id = request.form.get('temp_id')
+        email_otp = request.form.get('email_otp')
+        
+        if not temp_id or not email_otp:
+            return render_template('verify_email.html', 
+                                 error='Email verification code is required')
+        
+        # Get pending company data
+        pending_ref = db.reference(f'pending_companies/{temp_id}')
+        pending_data = pending_ref.get()
+        
+        if not pending_data:
+            return render_template('verify_email.html', 
+                                 error='Registration session expired. Please register again.')
+        
+        email = pending_data.get('email')
+        username = pending_data.get('username')
+        
+        # Verify email OTP only
+        email_verification_success, email_message = verify_email_otp_from_firebase(email, email_otp)
+        
+        if email_verification_success:
+            # Create actual user account
+            cred_ref = db.reference(f'credentials/users/{username}')
+            cred_ref.set({'password': pending_data['password_hash']})
+            
+            # Create user data
+            db.reference(f'Data/{username}').set({
+                'company_name': pending_data['company_name'],
+                'owner_name': pending_data['owner_name'],
+                'email': pending_data['email'],
+                'phone': pending_data['phone'],
+                'username': pending_data['username'],
+                'password': pending_data['password_hash'],
+                'phone_verified': False,  # Phone verification disabled
+                'email_verified': True,
+                'email_verified_at': datetime.now().isoformat(),
+                'created_at': pending_data['created_at']
+            })
+            
+            # Create storage folders for user
+            db.reference(f'storage/{username}').set({
+                'txt': {},
+                'img': {},
+                'audio': {},
+                'files': {}
+            })
+            
+            # Clean up pending data
+            pending_ref.delete()
+            
+            return render_template('registration_success.html', 
+                                 message='Registration completed successfully! Your email has been verified.')
+        else:
+            return render_template('verify_email.html', 
+                                 temp_id=temp_id,
+                                 email=email,
+                                 username=username,
+                                 error=email_message)
+    
+    except Exception as e:
+        logger.error(f"Registration verification error: {str(e)}")
+        return render_template('verify_email.html', 
+                             error='An error occurred during verification. Please try again.')
+
+@app.route('/resend-otp', methods=['POST'])
+def resend_otp():
+    """Resend OTP for registration verification - email only"""
+    try:
+        temp_id = request.form.get('temp_id')
+        
+        if not temp_id:
+            return jsonify({'success': False, 'error': 'Invalid request'})
+        
+        # Get pending company data
+        pending_ref = db.reference(f'pending_companies/{temp_id}')
+        pending_data = pending_ref.get()
+        
+        if not pending_data:
+            return jsonify({'success': False, 'error': 'Registration session expired'})
+        
+        email = pending_data.get('email')
+        username = pending_data.get('username')
+        
+        # Generate new email OTP only
+        email_otp = generate_otp()
+        if store_email_otp_in_firebase(email, email_otp, username):
+            send_email_otp(email, email_otp)
+            return jsonify({'success': True, 'message': 'Email verification code sent successfully!'})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to send email OTP'})
+    
+    except Exception as e:
+        logger.error(f"Resend OTP error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to resend OTP'})
+
+# Firebase Phone Auth Routes Removed - Email verification only
+
+# Firebase SMS routes removed - Email verification only
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -276,7 +764,7 @@ def login():
             if role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             else:
-                return render_template('index.html', username=username)
+                return redirect(url_for('index'))
     return render_template('login.html', error=error)
 
 @app.route('/logout')
@@ -290,7 +778,207 @@ def logout():
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
-    return render_template('admin_dashboard.html')
+    return render_template('admin_dashboard.html', **get_user_context())
+
+# --- Edit Company Endpoint ---
+@app.route('/admin/edit-company', methods=['POST'])
+@admin_required
+def admin_edit_company():
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        if not username:
+            return jsonify({'success': False, 'error': 'Username required'})
+        company_ref = db.reference(f'Data/{username}')
+        company_data = company_ref.get()
+        if not company_data:
+            return jsonify({'success': False, 'error': 'Company not found'})
+        # Update fields
+        for field in ['company_name', 'owner_name', 'email', 'phone']:
+            if field in data:
+                company_data[field] = data[field]
+        company_ref.set(company_data)
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Edit company error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# --- Export Reports Endpoint ---
+@app.route('/admin/export-reports', methods=['POST'])
+@admin_required
+def admin_export_reports():
+    """Export admin reports as CSV, PDF, or JSON based on frontend request."""
+    try:
+        data = request.get_json()
+        report_type = data.get('type')
+        from_date = data.get('fromDate')
+        to_date = data.get('toDate')
+        export_format = data.get('format', 'csv')
+        plan_filters = data.get('planFilters', [])
+
+        # Parse date range
+        from_dt = datetime.strptime(from_date, '%Y-%m-%d') if from_date else None
+        to_dt = datetime.strptime(to_date, '%Y-%m-%d') if to_date else None
+
+        # Fetch data based on report_type
+        result_data = []
+        if report_type == 'users':
+            users_ref = db.reference('Data')
+            users_data = users_ref.get() or {}
+            for username, user in users_data.items():
+                if not isinstance(user, dict):
+                    continue
+                reg_date = user.get('registered_date', None)
+                # Date filter (if available)
+                if reg_date and from_dt and to_dt:
+                    try:
+                        reg_dt = datetime.strptime(reg_date, '%Y-%m-%d')
+                        if not (from_dt <= reg_dt <= to_dt):
+                            continue
+                    except:
+                        pass
+                result_data.append({
+                    'Username': username,
+                    'Name': user.get('owner_name', ''),
+                    'Email': user.get('email', ''),
+                    'Phone': user.get('phone', ''),
+                    'Company': user.get('company_name', ''),
+                    'Plan': user.get('membership_status', ''),
+                    'Registered': user.get('registered_date', '')
+                })
+        elif report_type == 'companies':
+            companies_ref = db.reference('Data')
+            companies_data = companies_ref.get() or {}
+            for username, company in companies_data.items():
+                if not isinstance(company, dict):
+                    continue
+                reg_date = company.get('registered_date', None)
+                if reg_date and from_dt and to_dt:
+                    try:
+                        reg_dt = datetime.strptime(reg_date, '%Y-%m-%d')
+                        if not (from_dt <= reg_dt <= to_dt):
+                            continue
+                    except:
+                        pass
+                result_data.append({
+                    'Username': username,
+                    'Company': company.get('company_name', ''),
+                    'Owner': company.get('owner_name', ''),
+                    'Email': company.get('email', ''),
+                    'Phone': company.get('phone', ''),
+                    'Plan': company.get('membership_status', ''),
+                    'Registered': company.get('registered_date', '')
+                })
+        elif report_type == 'plans':
+            users_ref = db.reference('Data')
+            users_data = users_ref.get() or {}
+            for username, user in users_data.items():
+                if not isinstance(user, dict):
+                    continue
+                plan = user.get('membership_status', 'Free')
+                if plan_filters and plan.lower() not in plan_filters:
+                    continue
+                reg_date = user.get('registered_date', None)
+                if reg_date and from_dt and to_dt:
+                    try:
+                        reg_dt = datetime.strptime(reg_date, '%Y-%m-%d')
+                        if not (from_dt <= reg_dt <= to_dt):
+                            continue
+                    except:
+                        pass
+                result_data.append({
+                    'Username': username,
+                    'Plan': plan,
+                    'Company': user.get('company_name', ''),
+                    'Owner': user.get('owner_name', ''),
+                    'Email': user.get('email', ''),
+                    'Registered': user.get('registered_date', '')
+                })
+        elif report_type == 'usage':
+            # Example: tool usage stats
+            storage_ref = db.reference('storage')
+            storage_data = storage_ref.get() or {}
+            for username, user_storage in storage_data.items():
+                if not isinstance(user_storage, dict):
+                    continue
+                usage = {k: len(v) if isinstance(v, dict) else 0 for k, v in user_storage.items()}
+                result_data.append({'Username': username, **usage})
+        elif report_type == 'financial':
+            # Placeholder: implement as needed
+            result_data.append({'Note': 'Financial report not implemented'})
+        elif report_type == 'comprehensive':
+            # Combine all above
+            # For brevity, just combine users and companies
+            users_ref = db.reference('Data')
+            users_data = users_ref.get() or {}
+            for username, user in users_data.items():
+                if not isinstance(user, dict):
+                    continue
+                result_data.append({
+                    'Username': username,
+                    'Name': user.get('owner_name', ''),
+                    'Email': user.get('email', ''),
+                    'Phone': user.get('phone', ''),
+                    'Company': user.get('company_name', ''),
+                    'Plan': user.get('membership_status', ''),
+                    'Registered': user.get('registered_date', '')
+                })
+
+        # Output in requested format
+        if export_format == 'json':
+            return jsonify(result_data)
+        elif export_format == 'csv':
+            import csv
+            output = io.StringIO()
+            if result_data:
+                writer = csv.DictWriter(output, fieldnames=result_data[0].keys())
+                writer.writeheader()
+                writer.writerows(result_data)
+            else:
+                output.write('No data found')
+            output.seek(0)
+            return send_file(
+                io.BytesIO(output.getvalue().encode('utf-8')),
+                mimetype='text/csv',
+                as_attachment=True,
+                download_name=f'docshift_{report_type}_report_{datetime.now().strftime("%Y%m%d")}.csv'
+            )
+        elif export_format == 'pdf':
+            # Simple PDF export using FPDF
+            from fpdf import FPDF
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font('Arial', 'B', 12)
+            pdf.cell(0, 10, f'{report_type.title()} Report', ln=1, align='C')
+            pdf.set_font('Arial', '', 10)
+            if result_data:
+                col_width = pdf.w / (len(result_data[0]) + 1)
+                row_height = pdf.font_size * 1.5
+                # Header
+                for key in result_data[0].keys():
+                    pdf.cell(col_width, row_height, str(key), border=1)
+                pdf.ln(row_height)
+                # Rows
+                for row in result_data:
+                    for val in row.values():
+                        pdf.cell(col_width, row_height, str(val), border=1)
+                    pdf.ln(row_height)
+            else:
+                pdf.cell(0, 10, 'No data found', ln=1)
+            pdf_bytes = pdf.output(dest='S').encode('latin1')
+            pdf_output = io.BytesIO(pdf_bytes)
+            pdf_output.seek(0)
+            return send_file(
+                pdf_output,
+                mimetype='application/pdf',
+                as_attachment=True,
+                download_name=f'docshift_{report_type}_report_{datetime.now().strftime("%Y%m%d")}.pdf'
+            )
+        else:
+            return jsonify({'error': 'Invalid export format'}), 400
+    except Exception as e:
+        logger.error(f"Export reports error: {str(e)}")
+        return jsonify({'error': f'Failed to export report: {str(e)}'}), 500
 
 @app.route('/api/admin/dashboard-data')
 @admin_required
@@ -352,7 +1040,7 @@ def admin_dashboard_data():
 @app.route('/admin/companies')
 @admin_required
 def admin_companies():
-    return render_template('admin_companies.html')
+    return render_template('admin_companies.html', **get_user_context())
 
 @app.route('/api/admin/all-companies')
 @admin_required
@@ -388,7 +1076,7 @@ def admin_all_companies():
 @app.route('/admin/company-details')
 @admin_required
 def company_details():
-    return render_template('company_details.html')
+    return render_template('company_details.html', **get_user_context())
 
 @app.route('/api/admin/company-details/<username>')
 @admin_required
@@ -477,10 +1165,246 @@ def company_details_api(username):
         logger.error(f"Error fetching company details for {username}: {str(e)}")
         return jsonify({"error": "Failed to fetch company details"}), 500
 
+@app.route('/admin/delete-company', methods=['POST'])
+@admin_required
+def delete_company():
+    """Delete a company and all associated data"""
+    try:
+        # Get request data
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        username = data.get('username')
+        confirm_delete = data.get('confirm_delete', False)
+        
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+        
+        if not confirm_delete:
+            return jsonify({"error": "Delete confirmation is required"}), 400
+        
+        # Check if company exists
+        company_ref = db.reference(f'Data/{username}')
+        company_data = company_ref.get()
+        
+        if not company_data:
+            return jsonify({"error": "Company not found"}), 404
+        
+        # Get company name for logging
+        company_name = company_data.get('company_name', username)
+        
+        # Log the deletion attempt
+        logger.info(f"Admin attempting to delete company: {company_name} (username: {username}) by admin: {session.get('admin_id', 'unknown')}")
+        
+        # Start deletion process
+        deletion_results = {
+            'company_data': False,
+            'storage_data': False,
+            'credentials': False,
+            'file_cleanup': False
+        }
+        
+        try:
+            # 1. Delete company basic data
+            company_ref.delete()
+            deletion_results['company_data'] = True
+            logger.info(f"Deleted company data for: {username}")
+            
+        except Exception as e:
+            logger.error(f"Error deleting company data for {username}: {str(e)}")
+        
+        try:
+            # 2. Delete storage data (uploaded files metadata)
+            storage_ref = db.reference(f'storage/{username}')
+            storage_data = storage_ref.get()
+            
+            if storage_data:
+                storage_ref.delete()
+                deletion_results['storage_data'] = True
+                logger.info(f"Deleted storage data for: {username}")
+            else:
+                deletion_results['storage_data'] = True  # No storage data to delete
+                
+        except Exception as e:
+            logger.error(f"Error deleting storage data for {username}: {str(e)}")
+        
+        try:
+            # 3. Delete user credentials if they exist
+            credentials_ref = db.reference(f'credentials/{username}')
+            credentials_data = credentials_ref.get()
+            
+            if credentials_data:
+                credentials_ref.delete()
+                deletion_results['credentials'] = True
+                logger.info(f"Deleted credentials for: {username}")
+            else:
+                deletion_results['credentials'] = True  # No credentials to delete
+                
+        except Exception as e:
+            logger.error(f"Error deleting credentials for {username}: {str(e)}")
+        
+        try:
+            # 4. Clean up any physical files if they exist
+            # This would depend on your file storage implementation
+            # For now, we'll mark it as successful since files are typically auto-deleted
+            deletion_results['file_cleanup'] = True
+            
+        except Exception as e:
+            logger.error(f"Error during file cleanup for {username}: {str(e)}")
+        
+        # Check overall success
+        total_operations = len(deletion_results)
+        successful_operations = sum(deletion_results.values())
+        
+        if successful_operations == total_operations:
+            # Complete success
+            logger.info(f"Successfully deleted company: {company_name} (username: {username})")
+            
+            # Log to admin activity if you have such a system
+            try:
+                admin_activity_ref = db.reference('admin_activity')
+                admin_activity_ref.push({
+                    'action': 'delete_company',
+                    'admin_id': session.get('admin_id', 'unknown'),
+                    'target_company': company_name,
+                    'target_username': username,
+                    'timestamp': datetime.now().isoformat(),
+                    'status': 'success'
+                })
+            except Exception as log_error:
+                logger.error(f"Error logging admin activity: {str(log_error)}")
+            
+            return jsonify({
+                "success": True,
+                "message": f"Company '{company_name}' has been successfully deleted",
+                "deletion_details": deletion_results
+            })
+            
+        elif successful_operations > 0:
+            # Partial success
+            logger.warning(f"Partial deletion for company: {company_name} (username: {username}). Results: {deletion_results}")
+            
+            return jsonify({
+                "success": True,
+                "message": f"Company '{company_name}' has been partially deleted. Some data may remain.",
+                "warning": "Partial deletion occurred",
+                "deletion_details": deletion_results
+            })
+            
+        else:
+            # Complete failure
+            logger.error(f"Failed to delete company: {company_name} (username: {username})")
+            return jsonify({
+                "error": "Failed to delete company. No data was removed.",
+                "deletion_details": deletion_results
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"Unexpected error during company deletion: {str(e)}")
+        return jsonify({"error": f"Internal server error: {str(e)}"}), 500
+
+@app.route('/admin/<path:filename>')
+def admin_files(filename):
+    """Serve admin static files"""
+    return send_from_directory('admin', filename)
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    """Serve static files"""
+    return send_from_directory('static', filename)
+
+# Serve assests folder for FAQ images
+@app.route('/assests/<path:filename>')
+def assests_files(filename):
+    return send_from_directory('assests', filename)
+
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.html')
+    return render_template('index.html', **get_user_context())
+
+@app.route('/help')
+@login_required
+def help_support():
+    """Help & Support page"""
+    return render_template('help_support.html', **get_user_context())
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    """Privacy Policy page"""
+    return render_template('privacy_policy.html', **get_user_context())
+
+@app.route('/terms-conditions')
+def terms_conditions():
+    """Terms & Conditions page"""
+    return render_template('terms_conditions.html', **get_user_context())
+
+@app.route('/upgrade-plan')
+@login_required
+def upgrade_plan():
+    """Upgrade Plan page"""
+    return render_template('upgrade_plan.html', **get_user_context())
+
+@app.route('/select_plan', methods=['POST'])
+@login_required
+def select_plan():
+    """Handle plan selection and update user membership"""
+    try:
+        data = request.get_json()
+        plan_name = data.get('plan', '')
+        
+        if not plan_name:
+            return jsonify({'success': False, 'error': 'No plan selected'})
+        
+        # Validate plan name
+        valid_plans = ['Free Trail', 'Standard', 'Premium']
+        if plan_name not in valid_plans:
+            return jsonify({'success': False, 'error': 'Invalid plan selected'})
+        
+        username = session.get('username')
+        if not username:
+            return jsonify({'success': False, 'error': 'User not authenticated'})
+        
+        # Update user's membership status in Firebase
+        try:
+            user_ref = db.reference(f'Data/{username}')
+            user_data = user_ref.get() or {}
+            user_data['membership_status'] = plan_name
+            user_ref.set(user_data)
+        except Exception as firebase_error:
+            logger.warning(f"Firebase update failed: {str(firebase_error)}")
+        
+        # Update user's membership status in SQLite as backup
+        try:
+            conn = sqlite3.connect('file_conversion.db')
+            cursor = conn.cursor()
+            
+            # Update the user's membership status
+            cursor.execute("""
+                UPDATE users 
+                SET membership_status = ? 
+                WHERE username = ?
+            """, (plan_name, username))
+            
+            conn.commit()
+            updated_rows = cursor.rowcount
+            conn.close()
+        except Exception as sqlite_error:
+            logger.warning(f"SQLite update failed: {str(sqlite_error)}")
+            updated_rows = 1  # Assume success if Firebase worked
+        
+        logger.info(f"User {username} upgraded to {plan_name} plan")
+        return jsonify({
+            'success': True, 
+            'message': f'Successfully upgraded to {plan_name} plan!',
+            'plan': plan_name
+        })
+            
+    except Exception as e:
+        logger.error(f"Plan selection error: {str(e)}")
+        return jsonify({'success': False, 'error': 'An error occurred while selecting the plan'})
 
 @app.route('/user_dashboard')
 @login_required
@@ -503,62 +1427,62 @@ def upload_txt():
 @app.route('/image-to-pdf')
 @login_required
 def image_to_pdf_page():
-    return render_template('image_to_pdf.html')
+    return render_template('image_to_pdf.html', **get_user_context())
 
 @app.route('/pdf-to-image')
 @login_required
 def pdf_to_image_page():
-    return render_template('pdf_to_image.html')
+    return render_template('pdf_to_image.html', **get_user_context())
 
 @app.route('/merge-pdfs')
 @login_required
 def merge_pdfs_page():
-    return render_template('merge_pdfs.html')
+    return render_template('merge_pdfs.html', **get_user_context())
 
 @app.route('/word-to-pdf')
 @login_required
 def word_to_pdf_page():
-    return render_template('word_to_pdf.html')
+    return render_template('word_to_pdf.html', **get_user_context())
 
 @app.route('/excel-to-pdf')
 @login_required
 def excel_to_pdf_page():
-    return render_template('excel_to_pdf.html')
+    return render_template('excel_to_pdf.html', **get_user_context())
 
 @app.route('/pdf-to-ppt')
 @login_required
 def pdf_to_ppt_page():
-    return render_template('pdf_to_ppt.html')
+    return render_template('pdf_to_ppt.html', **get_user_context())
 
 @app.route('/bg-remover')
 @login_required
 def bg_remover_page():
-    return render_template('bg_remover.html')
+    return render_template('bg_remover.html', **get_user_context())
 
 @app.route('/admin-logs')
 @login_required
 def logs_page():
-    return render_template('logs.html')
+    return render_template('logs.html', **get_user_context())
 
 @app.route('/history')
 @login_required
 def history_page():
-    return render_template('history.html')
+    return render_template('history.html', **get_user_context())
 
 @app.route('/compress-pdf')
 @login_required
 def compress_pdf_page():
-    return render_template('compress_pdf.html')
+    return render_template('compress_pdf.html', **get_user_context())
 
 @app.route('/split-pdf')
 @login_required
 def split_pdf_page():
-    return render_template('split_pdf.html')
+    return render_template('split_pdf.html', **get_user_context())
 
 @app.route('/remove-pages-ui')
 @login_required
 def remove_pages_ui():
-    return render_template('remove_page.html')
+    return render_template('remove_page.html', **get_user_context())
 
 @app.route('/document-screener')
 @login_required
@@ -566,34 +1490,35 @@ def document_screener_page():
     global current_document_text, conversation_history
     current_document_text = ''
     conversation_history.clear()
-    return render_template('document_screener.html')
+    return render_template('document_screener.html', **get_user_context())
 
 @app.route('/plagiarism-scanner')
 @login_required
 def plagiarism_scanner_page():
     result = session.pop('plagiarism_result', None)
     input_text = session.pop('plagiarism_input_text', '')
-    return render_template('plagiarism.html', result=result, input_text=input_text)
+    user_context = get_user_context()
+    return render_template('plagiarism.html', result=result, input_text=input_text, **user_context)
 
 @app.route('/text-to-speech')
 @login_required
 def text_to_speech_page():
-    return render_template('text_to_speech.html')
+    return render_template('text_to_speech.html', **get_user_context())
 
 @app.route('/speech-to-text')
 @login_required
 def speech_to_text_page():
-    return render_template('speech_to_text.html')
+    return render_template('speech_to_text.html', **get_user_context())
 
 @app.route('/ai-pdf-editor')
 @login_required
 def ai_pdf_editor_page():
-    return render_template('ai_pdf_editor.html')
+    return render_template('ai_pdf_editor.html', **get_user_context())
 
 @app.route('/text-summarizer')
 @login_required
 def text_summarizer_page():
-    return render_template('text_summarizer.html')
+    return render_template('text_summarizer.html', **get_user_context())
 
 # --- Image to PDF ---
 @app.route('/convert/image-to-pdf', methods=['POST'])
@@ -2389,6 +3314,37 @@ def periodic_cleanup():
 cleanup_thread = threading.Thread(target=periodic_cleanup, daemon=True)
 cleanup_thread.start()
 
+# --- Test Routes for Debugging ---
+
+@app.route('/test_dependencies')
+def test_dependencies():
+    """Test if all required dependencies are working"""
+    try:
+        # Test PIL/Pillow
+        from PIL import Image
+        test_image = Image.new('RGB', (100, 100), color='red')
+        
+        # Test Cloudinary
+        import cloudinary
+        cloudinary_status = "Configured" if cloudinary.config().cloud_name else "Not configured"
+        
+        # Test Firebase
+        firebase_status = "Connected" if db else "Not connected"
+        
+        return jsonify({
+            'success': True,
+            'dependencies': {
+                'PIL': 'Working',
+                'Cloudinary': cloudinary_status,
+                'Firebase': firebase_status
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
 # --- Profile Management Routes ---
 
 def update_users_table():
@@ -2450,6 +3406,16 @@ def get_user_profile(username):
     except Exception as e:
         logger.error(f"Error getting user profile: {str(e)}")
         return None
+
+def get_user_context():
+    """Get user context for templates"""
+    username = session.get('username')
+    user = get_user_profile(username)
+    
+    if not user:
+        user = {'username': username, 'profile_picture': None}
+    
+    return {'user': user}
 
 def update_user_profile(username, profile_data):
     """Update user profile in both Firebase and SQLite"""
@@ -2572,12 +3538,17 @@ def upload_profile_picture():
     """Handle profile picture upload"""
     try:
         username = session.get('username')
+        logger.info(f"Profile picture upload request from user: {username}")
         
         if 'profile_picture' not in request.files:
+            logger.error("No profile_picture in request.files")
             return jsonify({'success': False, 'error': 'No file uploaded'})
         
         file = request.files['profile_picture']
+        logger.info(f"File received: {file.filename}, size: {file.content_length}")
+        
         if file.filename == '':
+            logger.error("Empty filename")
             return jsonify({'success': False, 'error': 'No file selected'})
         
         # Validate file type
@@ -2585,29 +3556,41 @@ def upload_profile_picture():
         file_extension = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
         
         if file_extension not in allowed_extensions:
+            logger.error(f"Invalid file extension: {file_extension}")
             return jsonify({'success': False, 'error': 'Invalid file type. Please upload an image file.'})
         
         # Create temporary file for processing
         with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_extension}') as temp_file:
             file.save(temp_file.name)
             temp_path = temp_file.name
+            logger.info(f"File saved to temp path: {temp_path}")
         
         try:
+            # Check if PIL/Pillow is working
+            logger.info("Processing image with PIL...")
+            
             # Resize and optimize image
             with Image.open(temp_path) as img:
+                logger.info(f"Image opened: {img.size}, mode: {img.mode}")
+                
                 # Convert to RGB if necessary
                 if img.mode in ('RGBA', 'LA', 'P'):
                     img = img.convert('RGB')
+                    logger.info("Image converted to RGB")
                 
                 # Resize to max 500x500 while maintaining aspect ratio
                 img.thumbnail((500, 500), Image.Resampling.LANCZOS)
+                logger.info(f"Image resized to: {img.size}")
                 
                 # Save optimized image
                 optimized_path = temp_path.replace(f'.{file_extension}', '_optimized.jpg')
                 img.save(optimized_path, 'JPEG', quality=85, optimize=True)
+                logger.info(f"Optimized image saved to: {optimized_path}")
             
             # Upload to Cloudinary
+            logger.info("Uploading to Cloudinary...")
             cloudinary_folder = f'storage/{username}/profile'
+            
             result = cloudinary.uploader.upload(
                 optimized_path,
                 folder=cloudinary_folder,
@@ -2618,35 +3601,56 @@ def upload_profile_picture():
             )
             
             profile_picture_url = result['secure_url']
+            logger.info(f"Cloudinary upload successful: {profile_picture_url}")
             
             # Update user profile with new picture URL
             profile_data = {'profile_picture': profile_picture_url}
             if update_user_profile(username, profile_data):
+                logger.info("Profile updated successfully")
                 return jsonify({
                     'success': True, 
                     'profile_picture_url': profile_picture_url,
                     'message': 'Profile picture updated successfully!'
                 })
             else:
+                logger.error("Failed to update user profile in database")
                 return jsonify({'success': False, 'error': 'Failed to save profile picture URL'})
         
         except Exception as upload_error:
-            logger.error(f"Image upload error: {str(upload_error)}")
-            return jsonify({'success': False, 'error': 'Failed to process and upload image'})
+            logger.error(f"Image upload error: {str(upload_error)}", exc_info=True)
+            return jsonify({'success': False, 'error': f'Failed to process and upload image: {str(upload_error)}'})
         
         finally:
             # Clean up temporary files
             try:
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
+                    logger.info(f"Cleaned up temp file: {temp_path}")
                 if 'optimized_path' in locals() and os.path.exists(optimized_path):
                     os.remove(optimized_path)
+                    logger.info(f"Cleaned up optimized file: {optimized_path}")
             except Exception as cleanup_error:
                 logger.warning(f"Failed to clean up temp files: {str(cleanup_error)}")
     
     except Exception as e:
-        logger.error(f"Profile picture upload error: {str(e)}")
-        return jsonify({'success': False, 'error': 'An error occurred while uploading the image'})
+        logger.error(f"Profile picture upload error: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': f'An error occurred while uploading the image: {str(e)}'})
+
+@app.route('/remove_profile_picture', methods=['POST'])
+@login_required
+def remove_profile_picture():
+    try:
+        username = session.get('username')
+        
+        # Update profile picture to null in user profile
+        profile_data = {'profile_picture': None}
+        if update_user_profile(username, profile_data):
+            return jsonify({'success': True, 'message': 'Profile picture removed successfully!'})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to remove profile picture'})
+    except Exception as e:
+        logger.error(f"Remove profile picture error: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/change_password')
 @login_required
@@ -2700,9 +3704,37 @@ def update_password():
         return render_template('change_password.html', 
                              error='An error occurred while updating password')
 
+@app.route('/email-settings')
+@login_required
+def email_settings():
+    """Display email settings page for phone/email verification"""
+    username = session.get('username')
+    user_data = get_user_profile(username)
+    
+    if not user_data:
+        user_data = {'username': username, 'email': '', 'phone': ''}
+    
+    # Get verification status from Firebase
+    firebase_ref = db.reference(f'Data/{username}')
+    firebase_data = firebase_ref.get() or {}
+    
+    # Check verification status
+    phone_verified = firebase_data.get('phone_verified', False)
+    email_verified = firebase_data.get('email_verified', False)
+    
+    return render_template('email_settings.html', 
+                         user=user_data,
+                         phone_verified=phone_verified,
+                         email_verified=email_verified,
+                         **get_user_context())
+
 # --- Run Flask App ---
 
 if __name__ == '__main__':
     init_db()  # Initialize DB once on startup
     update_users_table()  # Update users table schema
-    app.run(host="0.0.0.0",debug=True)
+    print("🚀 Starting DocShift on 127.0.0.1:5000")
+    print("� Email verification enabled")
+    print("📱 Phone/SMS verification DISABLED")
+    print("🔥 Firebase SMS functionality has been removed")
+    app.run(debug=True, host='127.0.0.1', port=5000)

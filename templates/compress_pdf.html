@@ -154,9 +154,9 @@
           <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
           <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
           <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
-          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
-          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
-          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/word-to-pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/excel-to-pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/pdf-to-ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
           <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
           <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
         </div>
@@ -165,7 +165,7 @@
       
       <!-- User Profile Dropdown -->
       <div class="user-profile">
-        <img src="/static/user-profile.png" alt="User Profile" class="profile-icon" draggable="false" />
+        <img src="{{ user.profile_picture or '/static/user-profile.png' }}" alt="User Profile" class="profile-icon" draggable="false" />
         <div class="profile-dropdown">
           <a href="/profile" class="profile-dropdown-item">My Profile</a>
           <a href="/settings" class="profile-dropdown-item">Settings</a>

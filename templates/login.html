@@ -3,123 +3,553 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - TARS DocShift</title>
+    <title>Login - DocShift</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
     <style>
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1e1e2f;
-            background-image: url('https://via.placeholder.com/1500x1500.png?text=Subtle+Document+Pattern'); /* Placeholder for a subtle document/file pattern */
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            color: #f1f1f1;
-            margin: 0;
-            padding: 40px 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: 'Inter', Arial, sans-serif;
+            background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%);
             min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
         }
 
-        .container {
-            background-color: #2b2b3c;
-            padding: 30px 25px;
-            max-width: 450px;
+        .login-container {
+            display: flex;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 1000px;
             width: 100%;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-            text-align: center;
-            margin: 20px;
+            min-height: 600px;
+            backdrop-filter: blur(10px);
         }
 
-        h1 {
-            margin-bottom: 25px;
-            font-size: 24px;
-            color: #ffffff;
+        /* Left Side - Illustration */
+        .illustration-section {
+            flex: 1;
+            background: linear-gradient(135deg, #31004A 0%, #4A1B6B 50%, #610094 100%);
+            padding: 60px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .illustration-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(97, 0, 148, 0.3) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .illustration-content {
+            position: relative;
+            z-index: 2;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        /* Document Illustration */
+        .doc-illustration {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .doc-card {
+            position: absolute;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .doc-card.main {
+            width: 200px;
+            height: 240px;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+        }
+
+        .doc-card.secondary {
+            width: 160px;
+            height: 200px;
+            top: 20px;
+            left: 20px;
+            transform: rotate(-10deg);
+            z-index: 1;
+            opacity: 0.8;
+        }
+
+        .doc-card.tertiary {
+            width: 140px;
+            height: 180px;
+            top: 50px;
+            right: 30px;
+            transform: rotate(15deg);
+            z-index: 2;
+            opacity: 0.6;
+        }
+
+        .doc-header {
+            height: 40px;
+            background: linear-gradient(135deg, #610094, #31004A);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+        }
+
+        .doc-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .doc-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .content-line {
+            height: 6px;
+            background: linear-gradient(90deg, #E5E7EB, #F3F4F6);
+            border-radius: 3px;
+        }
+
+        .content-line.short {
+            width: 60%;
+        }
+
+        .content-line.medium {
+            width: 80%;
+        }
+
+        .content-line.long {
+            width: 90%;
+        }
+
+        .pdf-badge {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: #EF4444;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s ease;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .action-btn.add {
+            background: #10B981;
+            color: white;
+        }
+
+        .action-btn.check {
+            background: #3B82F6;
+            color: white;
+        }
+
+        /* Right Side - Login Form */
+        .login-section {
+            flex: 1;
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: white;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        .login-title {
+            font-size: 48px;
+            font-weight: 700;
+            color: #1F2937;
+            margin-bottom: 8px;
+            letter-spacing: -1px;
+        }
+
+        .login-subtitle {
+            font-size: 18px;
+            color: #6B7280;
+            font-weight: 400;
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
         }
 
         .form-group {
-            margin-bottom: 20px;
-            text-align: left;
+            margin-bottom: 24px;
         }
 
-        label {
+        .form-label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #f1f1f1;
-        }
-
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            background-color: #3a3a4d;
-            border: 1px solid #555;
-            border-radius: 5px;
-            color: #f1f1f1;
-            font-size: 15px;
-        }
-
-        input[type="text"]::placeholder,
-        input[type="password"]::placeholder {
-            color: #888;
-        }
-
-        button {
-            background-color: #ff4757;
-            color: #fff;
-            padding: 12px 20px;
             font-size: 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            width: 100%;
-            margin-top: 10px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
         }
 
-        button:hover {
-            background-color: #e84150;
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            font-size: 16px;
+            color: #1F2937;
+            background: #F9FAFB;
+            transition: all 0.3s ease;
+            font-family: 'Inter', Arial, sans-serif;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #610094;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(97, 0, 148, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: #9CA3AF;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 18px 32px;
+            background: linear-gradient(135deg, #610094, #31004A);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+
+        .login-button:hover {
+            background: linear-gradient(135deg, #31004A, #14033D);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(97, 0, 148, 0.4);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
         }
 
         .error-message {
-            color: #ff6b81;
-            margin-top: 10px;
-            font-weight: bold;
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #DC2626;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
         }
 
+        /* Responsive Design */
         @media (max-width: 768px) {
-            .container {
-                padding: 20px;
-                margin: 20px;
+            .login-container {
+                flex-direction: column;
+                margin: 10px;
+                min-height: auto;
             }
+
+            .illustration-section {
+                padding: 40px 20px;
+                min-height: 300px;
+            }
+
+            .doc-illustration {
+                height: 200px;
+            }
+
+            .doc-card.main {
+                width: 150px;
+                height: 180px;
+            }
+
+            .doc-card.secondary {
+                width: 120px;
+                height: 150px;
+            }
+
+            .doc-card.tertiary {
+                width: 100px;
+                height: 130px;
+            }
+
+            .login-section {
+                padding: 40px 30px;
+            }
+
+            .login-title {
+                font-size: 36px;
+            }
+
+            .login-subtitle {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-section {
+                padding: 30px 20px;
+            }
+
+            .login-title {
+                font-size: 28px;
+            }
+
+            .form-input {
+                padding: 14px 16px;
+                font-size: 14px;
+            }
+
+            .login-button {
+                padding: 16px 24px;
+                font-size: 16px;
+            }
+        }
+
+        /* Loading Animation */
+        .login-button.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .login-button.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>TARS DocShift</h1>
-        <form method="POST" action="/login">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Enter username" required>
+    <div class="login-container">
+        <!-- Left Side - Illustration -->
+        <div class="illustration-section">
+            <div class="illustration-content">
+                <div class="doc-illustration">
+                    <!-- Secondary Document -->
+                    <div class="doc-card secondary">
+                        <div class="doc-header">
+                            <div class="doc-dots">
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                        <div class="doc-content">
+                            <div class="content-line medium"></div>
+                            <div class="content-line short"></div>
+                            <div class="content-line long"></div>
+                            <div class="content-line medium"></div>
+                        </div>
+                    </div>
+
+                    <!-- Tertiary Document -->
+                    <div class="doc-card tertiary">
+                        <div class="doc-header">
+                            <div class="doc-dots">
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                        <div class="doc-content">
+                            <div class="content-line long"></div>
+                            <div class="content-line medium"></div>
+                            <div class="content-line short"></div>
+                        </div>
+                    </div>
+
+                    <!-- Main Document -->
+                    <div class="doc-card main">
+                        <div class="action-buttons">
+                            <div class="action-btn add">+</div>
+                            <div class="action-btn check">✓</div>
+                        </div>
+                        <div class="doc-header">
+                            <div class="doc-dots">
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                                <div class="dot"></div>
+                            </div>
+                        </div>
+                        <div class="doc-content">
+                            <div class="content-line long"></div>
+                            <div class="content-line medium"></div>
+                            <div class="content-line short"></div>
+                            <div class="content-line long"></div>
+                            <div class="content-line medium"></div>
+                            <div class="content-line short"></div>
+                        </div>
+                        <div class="pdf-badge">PDF</div>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Enter password" required>
+        </div>
+
+        <!-- Right Side - Login Form -->
+        <div class="login-section">
+            <div class="login-header">
+                <img src="/static/logo.png" alt="DocShift" class="logo" draggable="false" />
+                <h1 class="login-title">Login</h1>
+                <p class="login-subtitle">Welcome to Docshift!</p>
             </div>
-            <button type="submit">Login</button>
-            {% if error %}
-                <div class="error-message">{{ error }}</div>
-            {% endif %}
-        </form>
+
+            <form method="POST" action="/login" class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" 
+                           id="username" 
+                           name="username" 
+                           class="form-input" 
+                           placeholder="Enter your username" 
+                           required
+                           autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" 
+                           id="password" 
+                           name="password" 
+                           class="form-input" 
+                           placeholder="Enter your password" 
+                           required
+                           autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="login-button" id="loginButton">
+                    Login
+                </button>
+
+                {% if error %}
+                    <div class="error-message">{{ error }}</div>
+                {% endif %}
+            </form>
+        </div>
     </div>
+
+    <script>
+        // Add loading state to login button
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            const button = document.getElementById('loginButton');
+            button.classList.add('loading');
+            button.disabled = true;
+        });
+
+        // Add floating animation to document cards
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.doc-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.5}s`;
+                card.style.animation = `float ${3 + index}s ease-in-out infinite`;
+            });
+        });
+
+        // Add focus effects
+        const inputs = document.querySelectorAll('.form-input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
 </body>
 </html>

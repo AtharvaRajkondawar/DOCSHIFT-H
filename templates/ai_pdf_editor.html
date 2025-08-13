@@ -47,7 +47,7 @@
     .dropdown { position: relative; display: inline-block;}
     .dropdown-toggle::after { content: '▼'; margin-left: 7px; font-size: 0.83em; color: var(--white);}
     .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after { transform: rotate(180deg);}
-    .dropdown-content { display:none; position:absolute; top:58px; left:0; background:#fff; box-shadow:0 14px 42px 0 rgba(40,25,67,0.22),0 2px 12px 0 rgba(40,25,67,0.12); border-radius:17px; z-index:9999; padding:15px 26px 11px 17px; min-width:410px; max-width:540px; grid-template-columns:repeat(2,1fr); gap:9px 11px; }
+    .dropdown-content { display:none; position:absolute; top:58px; left:-120px; background:#fff; box-shadow:0 14px 42px 0 rgba(40,25,67,0.22),0 2px 12px 0 rgba(40,25,67,0.12); border-radius:17px; z-index:9999; padding:15px 26px 11px 17px; min-width:410px; max-width:540px; grid-template-columns:repeat(2,1fr); gap:9px 11px; }
     .dropdown:focus-within .dropdown-content, .dropdown:hover .dropdown-content{ display:grid; opacity:1; visibility:visible; pointer-events:all;}
     .dropdown-content a { color:#14131c; font-weight:600; background:#fff; padding:11px 20px 9px 13px; border-radius:10px; font-size:1rem; transition:background 0.13s, color 0.11s, box-shadow 0.19s; text-align:left;}
     .dropdown-content a:hover, .dropdown-content a:focus { background:#dedcff; color:#21003b;}
@@ -263,9 +263,9 @@
           <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
           <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
           <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
-          <a href="/convert_word_to_pdf" role="menuitem" tabindex="-1">Word to PDF</a>
-          <a href="/convert_excel_to_pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
-          <a href="/convert_pdf_to_ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/word-to-pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/excel-to-pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/pdf-to-ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
           <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
           <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
         </div>
@@ -274,7 +274,7 @@
       
       <!-- User Profile Dropdown -->
       <div class="user-profile">
-        <img src="/static/user-profile.png" alt="User Profile" class="profile-icon" draggable="false" />
+        <img src="{{ user.profile_picture or '/static/user-profile.png' }}" alt="User Profile" class="profile-icon" draggable="false" />
         <div class="profile-dropdown">
           <a href="/profile" class="profile-dropdown-item">My Profile</a>
           <a href="/settings" class="profile-dropdown-item">Settings</a>
