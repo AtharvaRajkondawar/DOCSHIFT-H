@@ -53,11 +53,11 @@ app = Flask(__name__)
 load_dotenv('api.env')
 
 # Firebase Realtime Database config
-FIREBASE_CRED_PATH = 'docshift.json'
+FIREBASE_CRED_PATH = os.getenv('FIREBASE_CRED_PATH')
 FIREBASE_DB_URL = 'https://docshift-86065-default-rtdb.firebaseio.com/'
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate(FIREBASE_CRED_PATH)
+    cred = credentials.Certificate(json.loads(FIREBASE_CRED_PATH))
     firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_DB_URL})
 
 # Cloudinary config
