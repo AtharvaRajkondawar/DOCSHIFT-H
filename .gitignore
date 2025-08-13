@@ -11,3 +11,6 @@ venv/lib/python3.12/site-packages/llvmlite/binding/libllvmlite.so
 venv/
 __pycache__/
 *.pyc
+/file_conversion.db
+
+
