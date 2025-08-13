@@ -6,3 +6,8 @@ api.env
 venv/lib/python3.12/site-packages/llvmlite/binding/libllvmlite.so
 venv/lib/python3.12/site-packages/cv2/cv2.abi3.so
 venv/lib/python3.12/site-packages/llvmlite/binding/libllvmlite.so
+
+
+venv/
+__pycache__/
+*.pyc
