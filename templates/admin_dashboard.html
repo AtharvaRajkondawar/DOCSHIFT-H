@@ -7,6 +7,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
     <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
     <style>
+        /* Hide native calendar icon in Chrome, Edge, Safari */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            opacity: 0;
+            display: none;
+        }
+        /* Hide native calendar icon in Firefox */
+        input[type="date"]::-moz-calendar-picker-indicator {
+            opacity: 0;
+            display: none;
+        }
+        /* Hide native calendar icon in IE/Edge */
+        input[type="date"]::-ms-input-placeholder {
+            opacity: 0;
+            display: none;
+        }
         :root {
             --bg-main: #000000;
             --tool-gradient: linear-gradient(-53deg, #31004A, #14033D);
@@ -302,7 +317,7 @@
         </div>
         <div class="admin-info">
             <div class="admin-badge">
-                👑 Administrator
+                Administrator
             </div>
             <a href="/logout" class="logout-btn">Logout</a>
         </div>
@@ -453,243 +468,139 @@
                 z-index: 10000;
                 backdrop-filter: blur(5px);
             `;
-            
+
             // Create modal content
             const modalContent = document.createElement('div');
             modalContent.style.cssText = `
                 background: linear-gradient(-53deg, #31004A, #14033D);
                 padding: 30px;
                 border-radius: 20px;
-                max-width: 600px;
-                width: 90%;
-                max-height: 80vh;
-                overflow-y: auto;
+                max-width: 819px;
+                width: 95%;
+                overflow-y: visible;
                 color: white;
                 font-family: 'Inter', Arial, sans-serif;
                 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
                 border: 1px solid rgba(255, 255, 255, 0.1);
             `;
-            
+
             modalContent.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                    <h2 style="color: #8B5CF6; font-size: 1.5rem; margin: 0;">📊 Export Reports</h2>
+                    <h2 style="color: #8B5CF6; font-size: 1.7rem; margin: 0; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 10px;">
+                        <img src='/admin/Export Reports.png' style='height: 32px; width: 32px; vertical-align: middle; margin-right: 6px;'> Export Reports
+                    </h2>
                     <button onclick="closeExportModal()" style="
                         background: none;
                         border: none;
                         color: white;
-                        font-size: 24px;
+                        font-size: 28px;
                         cursor: pointer;
                         opacity: 0.7;
                         transition: opacity 0.2s;
                     " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">&times;</button>
                 </div>
-                
-                <div style="margin-bottom: 25px;">
-                    <h3 style="color: #ffffff; margin-bottom: 15px; font-size: 1.1rem;">📈 Select Report Type:</h3>
+
+                <div style="margin-bottom: 28px;">
+                    <h3 style="color: #fff; margin-bottom: 18px; font-size: 1.13rem; font-weight: 600; letter-spacing: 0.2px;">Select Report Type:</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+                        <div class="export-option" onclick="selectExportType('users')" style="background: rgba(255,255,255,0.08); border-radius: 14px; padding: 18px 12px; cursor: pointer; border: 2px solid transparent; transition: all 0.3s; text-align: center;"
+                            onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <img src="/admin/Vector (24).png" style="height: 38px; margin-bottom: 8px;" alt="Users" />
+                            <div style="font-weight: 600; margin-bottom: 4px;">Users Report</div>
+                            <div style="font-size: 0.92rem; opacity: 0.8;">All registered users data</div>
+                        </div>
+                        <div class="export-option" onclick="selectExportType('companies')" style="background: rgba(255,255,255,0.08); border-radius: 14px; padding: 18px 12px; cursor: pointer; border: 2px solid transparent; transition: all 0.3s; text-align: center;"
+                            onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <img src="/admin/Group (5).png" style="height: 38px; margin-bottom: 8px;" alt="Companies" />
+                            <div style="font-weight: 600; margin-bottom: 4px;">Companies Report</div>
+                            <div style="font-size: 0.92rem; opacity: 0.8;">Company registrations & data</div>
+                        </div>
+                        <div class="export-option" onclick="selectExportType('plans')" style="background: rgba(255,255,255,0.08); border-radius: 14px; padding: 18px 12px; cursor: pointer; border: 2px solid transparent; transition: all 0.3s; text-align: center;"
+                            onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <img src="/admin/Premium Plan.png" style="height: 38px; margin-bottom: 8px;" alt="Plans" />
+                            <div style="font-weight: 600; margin-bottom: 4px;">Plans & Subscriptions</div>
+                            <div style="font-size: 0.92rem; opacity: 0.8;">User plans & revenue data</div>
+                        </div>
+                        <div class="export-option" onclick="selectExportType('usage')" style="background: rgba(255,255,255,0.08); border-radius: 14px; padding: 18px 12px; cursor: pointer; border: 2px solid transparent; transition: all 0.3s; text-align: center;"
+                            onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <img src="/admin/Group 233.png" style="height: 38px; margin-bottom: 8px;" alt="Usage" />
+                            <div style="font-weight: 600; margin-bottom: 4px;">Usage Analytics</div>
+                            <div style="font-size: 0.92rem; opacity: 0.8;">Tool usage & activity stats</div>
+                        </div>
+                        <div class="export-option" onclick="selectExportType('financial')" style="background: rgba(255,255,255,0.08); border-radius: 14px; padding: 18px 12px; cursor: pointer; border: 2px solid transparent; transition: all 0.3s; text-align: center;"
+                            onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <img src="/admin/Group (6).png" style="height: 38px; margin-bottom: 8px;" alt="Financial" />
+                            <div style="font-weight: 600; margin-bottom: 4px;">Financial Report</div>
+                            <div style="font-size: 0.92rem; opacity: 0.8;">Revenue & payment analysis</div>
+                        </div>
+                        <div class="export-option" onclick="selectExportType('comprehensive')" style="background: rgba(255,255,255,0.08); border-radius: 14px; padding: 18px 12px; cursor: pointer; border: 2px solid transparent; transition: all 0.3s; text-align: center;"
+                            onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
+                            <img src="/admin/Group 234.png" style="height: 38px; margin-bottom: 8px;" alt="Comprehensive" />
+                            <div style="font-weight: 600; margin-bottom: 4px;">Comprehensive Report</div>
+                            <div style="font-size: 0.92rem; opacity: 0.8;">All data combined</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 28px;">
+                    <h3 style="color: #fff; margin-bottom: 15px; font-size: 1.13rem; font-weight: 600; letter-spacing: 0.2px;">Date Range:</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div class="export-option" onclick="selectExportType('users')" style="
-                            background: rgba(255, 255, 255, 0.1);
-                            padding: 15px;
-                            border-radius: 10px;
-                            cursor: pointer;
-                            border: 2px solid transparent;
-                            transition: all 0.3s ease;
-                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
-                            <div style="font-weight: 600; margin-bottom: 5px;">👥 Users Report</div>
-                            <div style="font-size: 0.9rem; opacity: 0.8;">All registered users data</div>
+                        <div style="position: relative;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.93rem; opacity: 0.9;">From Date:</label>
+                            <input type="date" id="exportFromDate" style="width: 100%; padding: 10px 38px 10px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; font-family: 'Inter', Arial, sans-serif;" />
+                            <img src="/admin/Group 230.png" alt="Calendar" style="position: absolute; right: 10px; top: 35px; width: 22px; height: 22px; cursor: pointer; opacity: 0.85;" onclick="document.getElementById('exportFromDate').showPicker && document.getElementById('exportFromDate').showPicker(); document.getElementById('exportFromDate').focus();" />
                         </div>
-                        
-                        <div class="export-option" onclick="selectExportType('companies')" style="
-                            background: rgba(255, 255, 255, 0.1);
-                            padding: 15px;
-                            border-radius: 10px;
-                            cursor: pointer;
-                            border: 2px solid transparent;
-                            transition: all 0.3s ease;
-                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
-                            <div style="font-weight: 600; margin-bottom: 5px;">🏢 Companies Report</div>
-                            <div style="font-size: 0.9rem; opacity: 0.8;">Company registrations & data</div>
+                        <div style="position: relative;">
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.93rem; opacity: 0.9;">To Date:</label>
+                            <input type="date" id="exportToDate" style="width: 100%; padding: 10px 38px 10px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; font-family: 'Inter', Arial, sans-serif;" />
+                            <img src="/admin/Group 230.png" alt="Calendar" style="position: absolute; right: 10px; top: 35px; width: 22px; height: 22px; cursor: pointer; opacity: 0.85;" onclick="document.getElementById('exportToDate').showPicker && document.getElementById('exportToDate').showPicker(); document.getElementById('exportToDate').focus();" />
                         </div>
-                        
-                        <div class="export-option" onclick="selectExportType('plans')" style="
-                            background: rgba(255, 255, 255, 0.1);
-                            padding: 15px;
-                            border-radius: 10px;
-                            cursor: pointer;
-                            border: 2px solid transparent;
-                            transition: all 0.3s ease;
-                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
-                            <div style="font-weight: 600; margin-bottom: 5px;">💎 Plans & Subscriptions</div>
-                            <div style="font-size: 0.9rem; opacity: 0.8;">User plans & revenue data</div>
-                        </div>
-                        
-                        <div class="export-option" onclick="selectExportType('usage')" style="
-                            background: rgba(255, 255, 255, 0.1);
-                            padding: 15px;
-                            border-radius: 10px;
-                            cursor: pointer;
-                            border: 2px solid transparent;
-                            transition: all 0.3s ease;
-                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
-                            <div style="font-weight: 600; margin-bottom: 5px;">📊 Usage Analytics</div>
-                            <div style="font-size: 0.9rem; opacity: 0.8;">Tool usage & activity stats</div>
-                        </div>
-                        
-                        <div class="export-option" onclick="selectExportType('financial')" style="
-                            background: rgba(255, 255, 255, 0.1);
-                            padding: 15px;
-                            border-radius: 10px;
-                            cursor: pointer;
-                            border: 2px solid transparent;
-                            transition: all 0.3s ease;
-                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
-                            <div style="font-weight: 600; margin-bottom: 5px;">💰 Financial Report</div>
-                            <div style="font-size: 0.9rem; opacity: 0.8;">Revenue & payment analysis</div>
-                        </div>
-                        
-                        <div class="export-option" onclick="selectExportType('comprehensive')" style="
-                            background: rgba(255, 255, 255, 0.1);
-                            padding: 15px;
-                            border-radius: 10px;
-                            cursor: pointer;
-                            border: 2px solid transparent;
-                            transition: all 0.3s ease;
-                        " onmouseover="this.style.borderColor='#8B5CF6'" onmouseout="this.style.borderColor='transparent'">
-                            <div style="font-weight: 600; margin-bottom: 5px;">📋 Comprehensive Report</div>
-                            <div style="font-size: 0.9rem; opacity: 0.8;">All data combined</div>
-                        </div>
+                    </div>
+                    <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="setQuickDateRange('7days')" style="background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.18); color: white; padding: 6px 14px; border-radius: 7px; cursor: pointer; font-size: 0.89rem; font-weight: 500;">Last 7 Days</button>
+                        <button onclick="setQuickDateRange('30days')" style="background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.18); color: white; padding: 6px 14px; border-radius: 7px; cursor: pointer; font-size: 0.89rem; font-weight: 500;">Last 30 Days</button>
+                        <button onclick="setQuickDateRange('3months')" style="background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.18); color: white; padding: 6px 14px; border-radius: 7px; cursor: pointer; font-size: 0.89rem; font-weight: 500;">Last 3 Months</button>
+                        <button onclick="setQuickDateRange('all')" style="background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.18); color: white; padding: 6px 14px; border-radius: 7px; cursor: pointer; font-size: 0.89rem; font-weight: 500;">All Time</button>
                     </div>
                 </div>
-                
-                <div style="margin-bottom: 25px;">
-                    <h3 style="color: #ffffff; margin-bottom: 15px; font-size: 1.1rem;">📅 Date Range:</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; opacity: 0.9;">From Date:</label>
-                            <input type="date" id="exportFromDate" style="
-                                width: 100%;
-                                padding: 10px;
-                                border-radius: 8px;
-                                border: 1px solid rgba(255, 255, 255, 0.2);
-                                background: rgba(0, 0, 0, 0.3);
-                                color: white;
-                                font-family: 'Inter', Arial, sans-serif;
-                            " />
-                        </div>
-                        <div>
-                            <label style="display: block; margin-bottom: 5px; font-size: 0.9rem; opacity: 0.9;">To Date:</label>
-                            <input type="date" id="exportToDate" style="
-                                width: 100%;
-                                padding: 10px;
-                                border-radius: 8px;
-                                border: 1px solid rgba(255, 255, 255, 0.2);
-                                background: rgba(0, 0, 0, 0.3);
-                                color: white;
-                                font-family: 'Inter', Arial, sans-serif;
-                            " />
-                        </div>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <button onclick="setQuickDateRange('7days')" style="
-                            background: rgba(255, 255, 255, 0.1);
-                            border: 1px solid rgba(255, 255, 255, 0.2);
-                            color: white;
-                            padding: 5px 12px;
-                            border-radius: 6px;
-                            cursor: pointer;
-                            margin-right: 8px;
-                            font-size: 0.85rem;
-                        ">Last 7 Days</button>
-                        <button onclick="setQuickDateRange('30days')" style="
-                            background: rgba(255, 255, 255, 0.1);
-                            border: 1px solid rgba(255, 255, 255, 0.2);
-                            color: white;
-                            padding: 5px 12px;
-                            border-radius: 6px;
-                            cursor: pointer;
-                            margin-right: 8px;
-                            font-size: 0.85rem;
-                        ">Last 30 Days</button>
-                        <button onclick="setQuickDateRange('3months')" style="
-                            background: rgba(255, 255, 255, 0.1);
-                            border: 1px solid rgba(255, 255, 255, 0.2);
-                            color: white;
-                            padding: 5px 12px;
-                            border-radius: 6px;
-                            cursor: pointer;
-                            margin-right: 8px;
-                            font-size: 0.85rem;
-                        ">Last 3 Months</button>
-                        <button onclick="setQuickDateRange('all')" style="
-                            background: rgba(255, 255, 255, 0.1);
-                            border: 1px solid rgba(255, 255, 255, 0.2);
-                            color: white;
-                            padding: 5px 12px;
-                            border-radius: 6px;
-                            cursor: pointer;
-                            font-size: 0.85rem;
-                        ">All Time</button>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 25px;">
-                    <h3 style="color: #ffffff; margin-bottom: 15px; font-size: 1.1rem;">📄 Export Format:</h3>
-                    <div style="display: flex; gap: 15px;">
-                        <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="radio" name="exportFormat" value="csv" checked style="margin-right: 8px;" />
-                            <span>📊 CSV (Excel Compatible)</span>
+
+                <div style="margin-bottom: 28px;">
+                    <h3 style="color: #fff; margin-bottom: 15px; font-size: 1.13rem; font-weight: 600; letter-spacing: 0.2px;">Export Format:</h3>
+                    <div style="display: flex; gap: 18px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; cursor: pointer; background: rgba(139,92,246,0.13); border-radius: 8px; padding: 8px 18px; font-weight: 500; gap: 8px; border: 2px solid #8B5CF6;">
+                            <img src="/admin/Group (7).png" style="height: 22px; width: 22px;" alt="CSV" />
+                            <input type="radio" name="exportFormat" value="csv" checked style="margin-right: 6px; accent-color: #8B5CF6;" />
+                            <span>CSV (Excel)</span>
                         </label>
-                        <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="radio" name="exportFormat" value="pdf" style="margin-right: 8px;" />
-                            <span>📄 PDF Report</span>
-                        </label>
-                        <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="radio" name="exportFormat" value="json" style="margin-right: 8px;" />
-                            <span>🔧 JSON Data</span>
+                        <label style="display: flex; align-items: center; cursor: pointer; background: rgba(139,92,246,0.09); border-radius: 8px; padding: 8px 18px; font-weight: 500; gap: 8px; border: 2px solid transparent;">
+                            <img src="/admin/Vector (25).png" style="height: 22px; width: 22px;" alt="PDF" />
+                            <input type="radio" name="exportFormat" value="pdf" style="margin-right: 6px; accent-color: #8B5CF6;" />
+                            <span>PDF Report</span>
                         </label>
                     </div>
                 </div>
-                
+
                 <div id="planFilterSection" style="display: none; margin-bottom: 25px;">
-                    <h3 style="color: #ffffff; margin-bottom: 15px; font-size: 1.1rem;">💎 Plan Filters:</h3>
+                    <h3 style="color: #fff; margin-bottom: 15px; font-size: 1.13rem; font-weight: 600; letter-spacing: 0.2px;">Plan Filters:</h3>
                     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                         <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="checkbox" name="planFilter" value="free" checked style="margin-right: 8px;" />
-                            <span>🆓 Free Plan</span>
+                            <input type="checkbox" name="planFilter" value="free" checked style="margin-right: 8px; accent-color: #8B5CF6;" />
+                            <span>Free Plan</span>
                         </label>
                         <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="checkbox" name="planFilter" value="standard" checked style="margin-right: 8px;" />
-                            <span>⭐ Standard Plan</span>
+                            <input type="checkbox" name="planFilter" value="standard" checked style="margin-right: 8px; accent-color: #8B5CF6;" />
+                            <span>Standard Plan</span>
                         </label>
                         <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="checkbox" name="planFilter" value="premium" checked style="margin-right: 8px;" />
-                            <span>💎 Premium Plan</span>
+                            <input type="checkbox" name="planFilter" value="premium" checked style="margin-right: 8px; accent-color: #8B5CF6;" />
+                            <span>Premium Plan</span>
                         </label>
                     </div>
                 </div>
-                
-                <div style="display: flex; gap: 15px; justify-content: flex-end;">
-                    <button onclick="closeExportModal()" style="
-                        background: rgba(255, 255, 255, 0.1);
-                        border: 1px solid rgba(255, 255, 255, 0.2);
-                        color: white;
-                        padding: 12px 24px;
-                        border-radius: 8px;
-                        cursor: pointer;
-                        font-weight: 600;
-                    ">Cancel</button>
-                    <button onclick="executeExport()" style="
-                        background: linear-gradient(135deg, #8B5CF6, #7C3AED);
-                        border: none;
-                        color: white;
-                        padding: 12px 24px;
-                        border-radius: 8px;
-                        cursor: pointer;
-                        font-weight: 600;
-                        transition: all 0.3s ease;
-                    " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                        🚀 Generate Export
-                    </button>
+
+                <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 10px;">
+                    <button onclick="closeExportModal()" style="background: rgba(255,255,255,0.11); border: 1px solid rgba(255,255,255,0.18); color: white; padding: 12px 28px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem;">Cancel</button>
+                    <button onclick="executeExport()" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED); border: none; color: white; padding: 12px 28px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s; box-shadow: 0 2px 8px rgba(139,92,246,0.13);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)';">Generate Export</button>
                 </div>
             `;
             
@@ -828,20 +739,6 @@
                     document.body.removeChild(a);
                     
                     showNotification('✅ Report exported successfully!', 'success');
-                } else {
-                    // For JSON, show preview or download
-                    const jsonStr = JSON.stringify(data, null, 2);
-                    const blob = new Blob([jsonStr], { type: 'application/json' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `docshift_${selectedExportType}_data_${new Date().toISOString().split('T')[0]}.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    
-                    showNotification('✅ Data exported successfully!', 'success');
                 }
                 
                 closeExportModal();

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Table Converter - DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --btn-black: #000;
+      --btn-accent-hover: #c193ff;
+    }
+    body { margin: 0; padding: 0; min-height: 100vh; background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%); font-family: 'Inter', Arial, sans-serif; color: var(--white); display: flex; flex-direction: column; }
+    .docscreen-outer { min-height: calc(100vh - 110px); display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;}
+    .docscreen-card { background: #fff; border-radius: 22px; box-shadow: 0 4px 40px rgba(40,0,85,0.22); display: flex; align-items: stretch; max-width: 700px; min-width: 320px; width: 96vw; padding: 49px 54px 39px 42px; gap: 67px; margin: 55px auto 38px auto; }
+    .docscreen-formside { flex: 1 1 488px; display: flex; flex-direction: column; align-items: flex-start; min-width: 300px; }
+    .docscreen-formside h1 { font-size: 2.18rem; font-weight: 700; color: #1A0326; margin-bottom: 19px; margin-top:0; letter-spacing: 0.01em; }
+    .docscreen-input-row { width: 100%; display: flex; gap: 11px; margin-bottom: 20px; }
+    .docscreen-upload-label { display: flex; align-items: center; background: #EFEAFB; border-radius: 9px; padding: 10px 21px; color: #39126a; font-size: 1.1rem; font-weight: 600; cursor: pointer; user-select: none; border: none; outline:none; transition: background 0.15s, transform 0.1s; }
+    .docscreen-upload-label:hover { background: #E0D4F7; transform: translateY(-1px); }
+    .docscreen-upload-label input[type="file"] { display: none; }
+    .docscreen-btn-row { display: flex; gap: 13px; width: 100%; margin-bottom: 19px; }
+    .docscreen-btn { border: none; border-radius: 11px; font-size: 1.05rem; font-weight: 600; padding: 13px 29px; cursor: pointer; transition: background 0.15s, color 0.12s; margin: 0; box-shadow: 0 2px 13px 0 rgba(162,89,255,0.09); letter-spacing: 0.01em; position: relative; }
+    .btn-analyze { background: var(--accent); color: #fff;}
+    .btn-analyze:hover { background: var(--btn-accent-hover);}
+    .docscreen-outputbox { width: 100%; min-height: 120px; max-height: 210px; border-radius: 14px; border: 1.6px solid #E9E6F7; background: #F8F6FC; color: #2a013f; font-size: 1.13rem; padding: 17px 17px; margin-bottom: 39px; outline: none; font-family: 'Inter', Arial, sans-serif; resize: vertical; font-weight: 500; }
+    .file-display { margin: 10px 0 16px 0; font-size: 0.97em; color: #6900ac; min-height: 1.3em; }
+    .result-success { background:#E8F5E8; color:#1a4d1a; border-radius:12px; padding:18px 16px; margin-bottom:18px; }
+    .result-error { color:red; margin-top:18px; }
+
+    /* --- Navbar styles from ai_resume_analyzer.html --- */
+    nav {
+      background: var(--navbar-bg);
+      height: 72px;
+      display: flex;
+      align-items: center;
+      padding: 0 48px;
+      box-sizing: border-box;
+      z-index: 1000;
+      position: relative;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      margin-right: 21px;
+      margin-top: 2px;
+    }
+    .brand-logo img {
+      height: 62px;
+      width: 138px;
+      object-fit: contain;
+      border-radius: 10px;
+      user-select: none;
+      -webkit-user-drag: none;
+      transition: box-shadow 0.25s;
+      background: transparent;
+    }
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 1.7rem;
+      height: 100%;
+      position: relative;
+      z-index: 1001;
+      flex-wrap: nowrap;
+    }
+    .nav-links a,
+    .dropdown-toggle {
+      color: var(--white);
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 1.13rem;
+      padding: 10px 18px 8px 18px;
+      border-radius: 8px;
+      transition: background 0.19s, color 0.18s, box-shadow 0.19s;
+      cursor: pointer;
+      background: none;
+      border: none;
+      outline: none;
+      display: inline-block;
+      white-space: nowrap;
+      user-select: none;
+      opacity: 0.93;
+      box-shadow: none;
+      position: relative;
+    }
+    .nav-links a.active,
+    .nav-links a:hover,
+    .dropdown-toggle:focus,
+    .dropdown-toggle:hover {
+      opacity: 1;
+      color: var(--white);
+    }
+    .user-profile {
+      position: relative;
+      display: inline-block;
+      margin-left: 10px;
+    }
+    .profile-icon {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      object-fit: cover;
+    }
+    .profile-icon:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+    }
+    .profile-dropdown {
+      display: none;
+      position: absolute;
+      top: 45px;
+      right: 0;
+      width: 200px;
+      height: 175px;
+      background: #1B0039;
+      opacity: 0.8;
+      border-radius: 20px 0px 20px 20px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      z-index: 9999;
+      padding: 8px 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      align-content: flex-start;
+    }
+    .user-profile:hover .profile-dropdown {
+      display: flex;
+      opacity: 0.8;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .profile-dropdown::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      right: 12px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 8px solid #1B0039;
+    }
+    .profile-dropdown-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      flex: 0 1 auto;
+      min-width: 120px;
+      margin: 4px;
+      border-radius: 8px;
+      justify-content: flex-start;
+      text-align: left;
+    }
+    .profile-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    .profile-dropdown-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    .profile-dropdown-item.logout:hover {
+      background-color: rgba(255, 107, 107, 0.1);
+    }
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle::after {
+      content: '\25BC';
+      margin-left: 7px;
+      font-size: 0.8em;
+      vertical-align: middle;
+      transition: transform 0.2s;
+    }
+    .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after {
+      transform: rotate(180deg);
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 58px;
+      left: -120px;
+      background: #fff;
+      box-shadow: 0 14px 42px 0 rgba(40,25,67,0.22),0 2px 12px 0 rgba(40,25,67,0.12);
+      border-radius: 17px;
+      z-index: 9999;
+      padding: 15px 26px 11px 17px;
+      min-width: 410px;
+      max-width: 540px;
+      grid-template-columns: repeat(2,1fr);
+      gap: 9px 11px;
+    }
+    .dropdown:hover .dropdown-content, .dropdown:focus-within .dropdown-content {
+      display: grid;
+    }
+    .dropdown-content a {
+      color: #14131c;
+      font-weight: 700;
+      background: #fff;
+      padding: 13px 20px 11px 16px;
+      border-radius: 11px;
+      font-size: 1.05rem;
+      transition: background 0.13s, color 0.11s;
+      text-decoration: none;
+      border: none;
+      display: block;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+      box-shadow: none;
+      margin: 0;
+      outline: none;
+      text-align: left;
+    }
+    .dropdown-content a:hover, .dropdown-content a:focus {
+      background: #dedcff;
+      color: #21003b;
+    }
+
+    /* Prompt box style */
+    .prompt-box-label {
+      color: #39126a;
+      font-weight: 600;
+      margin-bottom: 7px;
+      font-size: 1.08rem;
+      display: block;
+      letter-spacing: 0.01em;
+    }
+    .prompt-box {
+      width: 100%;
+      min-height: 60px;
+      max-height: 180px;
+      border-radius: 12px;
+      border: 1.7px solid #d2c6e6;
+      background: #f7f3fd;
+      color: #2a013f;
+      font-size: 1.09rem;
+      padding: 15px 15px 13px 15px;
+      margin-bottom: 18px;
+      outline: none;
+      font-family: 'Inter', Arial, sans-serif;
+      font-weight: 500;
+      box-shadow: 0 2px 12px 0 rgba(162,89,255,0.07);
+      transition: border 0.18s, box-shadow 0.18s;
+      resize: vertical;
+    }
+    .prompt-box:focus {
+      border: 1.7px solid #a259ff;
+      box-shadow: 0 4px 18px 0 rgba(162,89,255,0.13);
+      background: #f3eaff;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand-logo">
+      <img src="/static/logo.png" alt="DocShift Logo" draggable="false" />
+    </div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/ai_resume_analyzer" role="menuitem" tabindex="-1">AI Resume Analyzer</a>
+          <a href="/ai_table_converter" role="menuitem" tabindex="-1">AI Table Converter</a>
+          <a href="/document_screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/word-to-pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/excel-to-pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/pdf-to-ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/history" role="menuitem" tabindex="0">History</a>
+      <!-- User Profile Dropdown -->
+      <div class="user-profile">
+        <img src="{{ user.profile_picture or '/static/user-profile.png' }}" 
+              alt="User Profile" 
+              class="profile-icon" 
+              draggable="false" />
+        <div class="profile-dropdown">
+          <a href="/profile" class="profile-dropdown-item">
+            My Profile
+          </a>
+          <a href="/settings" class="profile-dropdown-item">
+            Settings
+          </a>
+          <a href="/help" class="profile-dropdown-item">
+            Help & Support
+          </a>
+          <a href="/logout" class="profile-dropdown-item logout">
+            Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <div class="docscreen-outer">
+    <div class="docscreen-card">
+      <div class="docscreen-formside">
+        <h1>AI Table Converter</h1>
+        <form id="table-converter-form" enctype="multipart/form-data">
+          <div class="docscreen-input-row">
+            <label class="docscreen-upload-label" for="datafile" tabindex="0" style="cursor:pointer;">
+              Upload Unstructured Data File
+            </label>
+            <input type="file" name="datafile" id="datafile" accept=".pdf,.docx,.txt" required style="display:none;" />
+          </div>
+          <div class="file-display" id="fileDisplay" style="display:none;"></div>
+            <div class="docscreen-input-row" style="flex-direction:column;align-items:flex-start;gap:0;">
+              <label for="prompt" class="prompt-box-label">Prompt :</label>
+              <textarea id="prompt" name="prompt" class="prompt-box" rows="3" placeholder="E.g. Extract all invoice items as a table, include columns for item, quantity, price..."></textarea>
+            </div>
+          <div style="color:#8B7BA8;font-size:0.97em;margin-bottom:10px;">
+            Selecting PDF will generate a new file with your data in a clean table format.
+          </div>
+          <div class="docscreen-btn-row">
+            <button type="submit" class="docscreen-btn btn-analyze">Convert</button>
+          </div>
+        </form>
+        <div id="result-container"></div>
+      </div>
+    </div>
+  </div>
+  <footer style="text-align:center;padding:18px 0 8px 0;background:var(--footer-bg);color:#e0e0e0;font-size:0.95em;margin-top:auto;box-shadow:none;">© 2025 DocShift. All rights reserved.</footer>
+  <script>
+    // File input UX
+    const fileInput = document.getElementById('datafile');
+    const fileDisplay = document.getElementById('fileDisplay');
+    const uploadLabel = document.querySelector('.docscreen-upload-label');
+    let fileList = [];
+  // Remove manual onclick, let label's for attribute handle file dialog
+    fileInput.addEventListener('change', function() {
+      fileList = Array.from(fileInput.files);
+      updateFileDisplay();
+    });
+    function updateFileDisplay() {
+      if (fileList.length > 0) {
+        fileDisplay.innerHTML = fileList.map((file, idx) =>
+          `<span>${file.name}</span> <button type="button" class="remove-btn" data-idx="${idx}" style="background-color:#ff3333;color:#fff;border:none;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:0.87em;margin-left:7px;">Remove</button>`
+        ).join('<br>');
+        fileDisplay.style.display = 'block';
+        fileDisplay.querySelectorAll('.remove-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const idx = parseInt(this.getAttribute('data-idx'));
+            fileList.splice(idx, 1);
+            updateFileListInput();
+            updateFileDisplay();
+          });
+        });
+      } else {
+        fileDisplay.innerHTML = '';
+        fileDisplay.style.display = 'none';
+        fileInput.value = '';
+      }
+    }
+    function updateFileListInput() {
+      const dt = new DataTransfer();
+      fileList.forEach(file => dt.items.add(file));
+      fileInput.files = dt.files;
+    }
+    document.getElementById('table-converter-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (fileList.length === 0) return;
+      const formData = new FormData();
+      formData.append('datafile', fileList[0]);
+      formData.append('format', 'pdf');
+      // Add prompt value
+      formData.append('prompt', document.getElementById('prompt').value);
+      const resultContainer = document.getElementById('result-container');
+      resultContainer.innerHTML = '<div style="color:#A259FF;">Converting, please wait...</div>';
+      const response = await fetch('/ai_table_converter', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if (data.download_url && data.filename) {
+        // Download the file as an attachment using fetch, not by opening the URL
+        fetch(data.download_url)
+          .then(response => response.blob())
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = data.filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            resultContainer.innerHTML = `<div class="result-success">Your table is ready and downloading: <span style='color:#28A745;font-weight:600;'>${data.filename}</span></div>`;
+          })
+          .catch(() => {
+            resultContainer.innerHTML = `<div class=\"result-error\">Download failed. Please try again.</div>`;
+          });
+      } else {
+        resultContainer.innerHTML = `<div class=\"result-error\">${data.error || 'Conversion failed.'}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>

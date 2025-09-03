@@ -14,6 +14,8 @@ import mimetypes
 import random
 import threading
 import smtplib
+import csv
+import xlsxwriter
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, timedelta
@@ -86,7 +88,8 @@ recognizer = sr.Recognizer()
 
 # Globals for AI Document Screener and AI PDF Editor
 current_document_text = ''
-conversation_history = deque(maxlen=10)
+# Remove chat history limit for resume analyzer chat (unlimited turns)
+conversation_history = []
 latest_text = ""
 
 # --- Utility Functions ---
@@ -98,6 +101,182 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+# --- AI Resume Analyzer Utilities ---
+def extract_text_from_file(file_storage):
+    """Extract text from uploaded file (PDF, DOCX, TXT, etc.)."""
+    filename = file_storage.filename.lower()
+    ext = os.path.splitext(filename)[1]
+    file_storage.seek(0)
+    if ext == '.pdf':
+        try:
+            reader = PdfReader(file_storage)
+            text = "\n".join(page.extract_text() or '' for page in reader.pages)
+            return text.strip()
+        except Exception as e:
+            return f"[PDF extraction error: {e}]"
+    elif ext in ['.docx']:
+        try:
+            doc = Document(file_storage)
+            return "\n".join([p.text for p in doc.paragraphs]).strip()
+        except Exception as e:
+            return f"[DOCX extraction error: {e}]"
+    elif ext in ['.txt']:
+        try:
+            return file_storage.read().decode(errors='ignore')
+        except Exception as e:
+            return f"[TXT extraction error: {e}]"
+    else:
+        return "[Unsupported file type]"
+
+def summarize_resume_with_openrouter(text):
+    """Send resume text to OpenRouter API and get a 200-word summary."""
+    prompt = f"Summarize the following resume in exactly 200 words, focusing on key skills, experience, and suitability for a generic job application.\n\n{text}"
+    headers = {
+        'Authorization': f'Bearer {OPENROUTER_API_KEY}',
+        'Content-Type': 'application/json',
+    }
+    data = {
+        "model": OPENROUTER_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are a professional resume summarizer."},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 800,
+        "temperature": 0.5
+    }
+    try:
+        response = requests.post(OPENROUTER_API_URL, headers=headers, json=data, timeout=60)
+        response.raise_for_status()
+        result = response.json()
+        summary = result.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+        return summary or '[No summary returned]'
+    except Exception as e:
+        return f"[OpenRouter API error: {e}]"
+
+# --- Flask Route: AI Resume Analyzer ---
+@app.route('/ai_resume_analyzer', methods=['POST'])
+@login_required
+def ai_resume_analyzer():
+    """Upload multiple resumes, analyze, and return 200-word summaries."""
+    if 'resumes' not in request.files:
+        return jsonify({"error": "No files part in the request."}), 400
+    files = request.files.getlist('resumes')
+    results = []
+    for file_storage in files:
+        filename = secure_filename(file_storage.filename)
+        text = extract_text_from_file(file_storage)
+        summary = summarize_resume_with_openrouter(text)
+        results.append({
+            "filename": filename,
+            "summary": summary
+        })
+    # Store results in session for download
+    session['resume_analyzer_results'] = results
+    return jsonify({"results": results})
+
+# Render the AI Resume Analyzer page
+@app.route('/ai_resume_analyzer', methods=['GET'])
+@login_required
+def ai_resume_analyzer_page():
+    # Pass user context for navbar/profile dropdown
+    return render_template('ai_resume_analyzer.html', **get_user_context())
+
+# --- Flask Route: AI Resume Analyzer Chat ---
+@app.route('/ai_resume_analyzer_chat', methods=['POST'])
+@login_required
+def ai_resume_analyzer_chat():
+    """Chat about the analyzed resumes (summaries in session). Unlimited chat history."""
+    data = request.get_json()
+    message = data.get('message', '')
+    history = data.get('history', [])
+    summaries = session.get('resume_analyzer_results', [])
+    if not summaries:
+        return jsonify({'reply': 'No resumes have been analyzed yet.'})
+    # Compose context for chat: all summaries
+    context = '\n\n'.join(f"Resume: {item['filename']}\nSummary: {item['summary']}" for item in summaries)
+    # Build chat history for OpenRouter (unlimited turns)
+    chat_messages = [
+        {"role": "system", "content": "You are an expert HR assistant. Answer questions based only on the following analyzed resume summaries. If the answer is not in the summaries, say you don't know. You can compare, rank, and analyze the resumes as requested.\n\n" + context}
+    ]
+    # Append all previous chat turns (no limit)
+    for msg in history:
+        if msg['role'] == 'user':
+            chat_messages.append({"role": "user", "content": msg['content']})
+        elif msg['role'] == 'assistant':
+            chat_messages.append({"role": "assistant", "content": msg['content']})
+    chat_messages.append({"role": "user", "content": message})
+    headers = {
+        'Authorization': f'Bearer {OPENROUTER_API_KEY}',
+        'Content-Type': 'application/json',
+    }
+    data = {
+        "model": OPENROUTER_MODEL,
+        "messages": chat_messages,
+        "max_tokens": 1200,  # Increase token limit for more complex answers
+        "temperature": 0.5
+    }
+    try:
+        response = requests.post(OPENROUTER_API_URL, headers=headers, json=data, timeout=90)
+        response.raise_for_status()
+        result = response.json()
+        reply = result.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+        return jsonify({'reply': reply or '[No response from AI]'}), 200
+    except Exception as e:
+        return jsonify({'reply': f'[OpenRouter API error: {e}]'}), 500
+
+# Download summaries as PDF or Excel, then upload to Firebase/Cloudinary
+@app.route('/download_resume_summaries')
+@login_required
+def download_resume_summaries():
+    import io
+    from fpdf import FPDF
+    import xlsxwriter
+    results = session.get('resume_analyzer_results', [])
+    fmt = request.args.get('format', 'pdf')
+    username = session.get('username', 'admin')
+    output = io.BytesIO()
+    filename = f"resume_summaries_{int(time.time())}.{fmt if fmt=='pdf' else 'xlsx'}"
+    if fmt == 'pdf':
+        def to_latin1(text):
+            return text.encode('latin1', errors='replace').decode('latin1')
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        pdf.set_font('Arial', 'B', 16)
+        pdf.cell(0, 10, to_latin1('AI Resume Analyzer Summaries'), ln=True, align='C')
+        pdf.ln(10)
+        pdf.set_font('Arial', '', 12)
+        for res in results:
+            pdf.set_font('Arial', 'B', 12)
+            pdf.cell(0, 10, to_latin1(res['filename']), ln=True)
+            pdf.set_font('Arial', '', 11)
+            pdf.multi_cell(0, 8, to_latin1(res['summary']))
+            pdf.ln(5)
+        pdf_bytes = pdf.output(dest='S').encode('latin1', errors='replace')
+        output.write(pdf_bytes)
+        output.seek(0)
+        mimetype = 'application/pdf'
+    else:
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        worksheet = workbook.add_worksheet('Summaries')
+        worksheet.write(0, 0, 'Filename')
+        worksheet.write(0, 1, 'Summary')
+        for idx, res in enumerate(results, 1):
+            worksheet.write(idx, 0, res['filename'])
+            worksheet.write(idx, 1, res['summary'])
+        workbook.close()
+        output.seek(0)
+        mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    # Upload to Cloudinary
+    output.seek(0)
+    cloudinary_result = cloudinary.uploader.upload(output, resource_type='raw', folder='resume_analyzer', public_id=filename)
+    url = cloudinary_result.get('secure_url')
+    # Store URL in Firebase under user's storage
+    store_url_in_firebase(url, 'resume_analyzer', filename)
+    # Send file for download
+    output.seek(0)
+    return send_file(output, as_attachment=True, download_name=filename, mimetype=mimetype)
 
 def admin_required(f):
     @wraps(f)
@@ -3728,6 +3907,188 @@ def email_settings():
                          email_verified=email_verified,
                          **get_user_context())
 
+# --- AI Table Converter Utilities ---
+def extract_text_for_table(file_storage):
+    filename = file_storage.filename.lower()
+    ext = os.path.splitext(filename)[1]
+    file_storage.seek(0)
+    if ext == '.pdf':
+        try:
+            reader = PdfReader(file_storage)
+            text = "\n".join(page.extract_text() or '' for page in reader.pages)
+            return text.strip()
+        except Exception as e:
+            file_storage.seek(0)
+            return f"[PDF extraction error: {e}]"
+    elif ext == '.docx':
+        try:
+            doc = Document(file_storage)
+            return "\n".join([p.text for p in doc.paragraphs]).strip()
+        except Exception as e:
+            file_storage.seek(0)
+            return f"[DOCX extraction error: {e}]"
+    elif ext == '.txt':
+        try:
+            file_storage.seek(0)
+            return file_storage.read().decode(errors='ignore')
+        except Exception as e:
+            file_storage.seek(0)
+            return f"[TXT extraction error: {e}]"
+    else:
+        return "[Unsupported file type]"
+
+def convert_unstructured_to_table_with_openrouter(text, output_format='csv'):
+    prompt = (
+        "Convert the following unstructured data into a clean, well-structured table. "
+        "Return the result as a PDF-friendly table (use markdown or plain text table format). If the data is not tabular, extract any possible fields and organize them as best as possible.\n\n{text}"
+    ).format(text=text)
+    headers = {
+        'Authorization': f'Bearer {OPENROUTER_API_KEY}',
+        'Content-Type': 'application/json',
+    }
+    data = {
+        "model": OPENROUTER_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are a data extraction and table formatting expert."},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 1200,
+        "temperature": 0.3
+    }
+    try:
+        response = requests.post(OPENROUTER_API_URL, headers=headers, json=data, timeout=90)
+        response.raise_for_status()
+        result = response.json()
+        content = result.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+        return content or '[No table returned]'
+    except Exception as e:
+        return f"[OpenRouter API error: {e}]"
+
+# --- Flask Route: AI Table Converter ---
+@app.route('/ai_table_converter', methods=['POST'])
+@login_required
+def ai_table_converter():
+    if 'datafile' not in request.files:
+        return jsonify({"error": "No file part in the request."}), 400
+    file_storage = request.files['datafile']
+    filename = secure_filename(file_storage.filename)
+    text = extract_text_for_table(file_storage)
+    # Only PDF output is allowed
+    ai_response = convert_unstructured_to_table_with_openrouter(text, 'pdf')
+    # Log the AI response for debugging
+    print('AI Table Converter AI response:', ai_response)
+    output = io.BytesIO()
+    try:
+        from fpdf import FPDF
+        import csv
+        import re
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        # Use Helvetica (always available)
+        pdf.set_font('helvetica', 'B', 14)
+        pdf.cell(0, 10, 'AI Table Converter Output', ln=True, align='C')
+        pdf.ln(6)
+        pdf.set_font('helvetica', '', 11)
+        left_margin = 15
+        right_margin = 15
+        effective_page_width = pdf.w - left_margin - right_margin
+        pdf.set_left_margin(left_margin)
+        pdf.set_right_margin(right_margin)
+        pdf.set_xy(left_margin, pdf.get_y())
+
+        # Try to parse markdown or CSV table from AI response
+        table_data = []
+        # Try markdown table
+        md_table = re.findall(r"((?:\|.+\|\n)+)", ai_response)
+        if md_table:
+            lines = [line.strip() for line in md_table[0].split('\n') if line.strip() and '|' in line]
+            for line in lines:
+                row = [cell.strip() for cell in line.strip('|').split('|')]
+                table_data.append(row)
+            # Remove markdown separator row if present
+            if len(table_data) > 1 and all(re.match(r"^:?-+:?$", cell) for cell in table_data[1]):
+                table_data.pop(1)
+        else:
+            # Try CSV
+            try:
+                csv_reader = csv.reader(ai_response.splitlines())
+                for row in csv_reader:
+                    if row:
+                        table_data.append([cell.strip() for cell in row])
+            except Exception:
+                pass
+
+        if table_data and len(table_data) > 1:
+            # Render as table
+            col_count = max(len(row) for row in table_data)
+            col_width = effective_page_width / col_count
+            pdf.set_font('helvetica', 'B', 11)
+            for cell in table_data[0]:
+                pdf.cell(col_width, 8, str(cell), border=1, align='C')
+            pdf.ln(8)
+            pdf.set_font('helvetica', '', 11)
+            for row in table_data[1:]:
+                for cell in row:
+                    pdf.cell(col_width, 8, str(cell), border=1, align='L')
+                pdf.ln(8)
+        else:
+            # Fallback: plain text, wrapped
+            pdf.multi_cell(effective_page_width, 8, ai_response, align='L')
+
+        pdf_bytes = pdf.output(dest='S').encode('latin1', errors='replace')
+        output.write(pdf_bytes)
+        mimetype = 'application/pdf'
+    except Exception as e:
+        print('PDF export error:', e)
+        return jsonify({"error": f"PDF export error: {e}"}), 500
+    output.seek(0)
+    out_filename = f"table_conversion_{int(time.time())}.pdf"
+    try:
+        # Always upload to Cloudinary after conversion
+        cloudinary_result = cloudinary.uploader.upload(output, resource_type='raw', folder='table_converter', public_id=out_filename)
+        url_cloudinary = cloudinary_result.get('secure_url')
+        store_url_in_firebase(url_cloudinary, 'table_converter', out_filename)
+    except Exception as e:
+        print('Cloudinary upload error:', e)
+        return jsonify({"error": f"Cloudinary upload error: {e}"}), 500
+    return jsonify({
+        "filename": out_filename,
+        "download_url": url_cloudinary
+    })
+
+# --- Download from Cloudinary as attachment ---
+@app.route('/download_table/<filename>')
+@login_required
+def download_table(filename):
+    try:
+        url = None
+        # Get username from session (default to admin)
+        username = session.get('username', 'admin')
+        safe_key = re.sub(r'[./#$\[\]]', '_', filename)
+        ref = db.reference(f'storage/{username}/table_converter/{safe_key}')
+        data = ref.get()
+        url = data['url'] if data and 'url' in data else None
+        if not url:
+            url = f"https://res.cloudinary.com/{cloudinary.config().cloud_name}/raw/upload/table_converter/{filename}"
+        r = requests.get(url, stream=True)
+        r.raise_for_status()
+        return send_file(
+            io.BytesIO(r.content),
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        return jsonify({'error': f'Failed to download file: {e}'})
+
+# Render the AI Table Converter page (GET)
+@app.route('/ai_table_converter', methods=['GET'])
+@login_required
+def ai_table_converter_page():
+    return render_template('ai_table_converter.html', **get_user_context())
+
+
 # --- Run Flask App ---
 
 if __name__ == '__main__':
@@ -3737,4 +4098,4 @@ if __name__ == '__main__':
     print("� Email verification enabled")
     print("📱 Phone/SMS verification DISABLED")
     print("🔥 Firebase SMS functionality has been removed")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='127.0.0.1', port=5000)

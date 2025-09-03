@@ -502,13 +502,22 @@
 
                 <div class="form-group">
                     <label for="password" class="form-label">Password</label>
-                    <input type="password" 
-                           id="password" 
-                           name="password" 
-                           class="form-input" 
-                           placeholder="Enter your password" 
-                           required
-                           autocomplete="current-password">
+                    <div class="password-container" style="position: relative; display: flex; align-items: center;">
+                        <input type="password" 
+                               id="password" 
+                               name="password" 
+                               class="form-input" 
+                               placeholder="Enter your password" 
+                               required
+                               autocomplete="current-password"
+                               style="padding-right: 40px;">
+                        <span id="togglePassword" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; display: flex; align-items: center;">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1 12C1 12 5 5 12 5C19 5 23 12 23 12C23 12 19 19 12 19C5 19 1 12 1 12Z" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="12" cy="12" r="3.5" stroke="#888" stroke-width="2"/>
+                            </svg>
+                        </span>
+                    </div>
                 </div>
 
                 <button type="submit" class="login-button" id="loginButton">
@@ -532,22 +541,46 @@
 
         // Add floating animation to document cards
         document.addEventListener('DOMContentLoaded', function() {
+            // Password show/hide on hold
+            var passwordInput = document.getElementById('password');
+            var togglePassword = document.getElementById('togglePassword');
+            if (togglePassword && passwordInput) {
+                togglePassword.addEventListener('mousedown', function() {
+                    passwordInput.type = 'text';
+                });
+                togglePassword.addEventListener('mouseup', function() {
+                    passwordInput.type = 'password';
+                });
+                togglePassword.addEventListener('mouseleave', function() {
+                    passwordInput.type = 'password';
+                });
+                // For touch devices
+                togglePassword.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    passwordInput.type = 'text';
+                });
+                togglePassword.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    passwordInput.type = 'password';
+                });
+            }
+
+            // Floating animation
             const cards = document.querySelectorAll('.doc-card');
             cards.forEach((card, index) => {
                 card.style.animationDelay = `${index * 0.5}s`;
                 card.style.animation = `float ${3 + index}s ease-in-out infinite`;
             });
-        });
 
-        // Add focus effects
-        const inputs = document.querySelectorAll('.form-input');
-        inputs.forEach(input => {
-            input.addEventListener('focus', function() {
-                this.parentElement.style.transform = 'translateY(-2px)';
-            });
-            
-            input.addEventListener('blur', function() {
-                this.parentElement.style.transform = 'translateY(0)';
+            // Add focus effects
+            const inputs = document.querySelectorAll('.form-input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.style.transform = 'translateY(-2px)';
+                });
+                input.addEventListener('blur', function() {
+                    this.parentElement.style.transform = 'translateY(0)';
+                });
             });
         });
     </script>
