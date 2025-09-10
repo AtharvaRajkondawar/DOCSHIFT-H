@@ -16,6 +16,12 @@ import threading
 import smtplib
 import csv
 import xlsxwriter
+import html
+import fitz  # PyMuPDF
+import firebase_admin
+from firebase_admin import credentials, db, auth
+import cloudinary
+import cloudinary.uploader
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, timedelta
@@ -23,6 +29,13 @@ from functools import wraps
 from collections import deque
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, session, redirect, url_for, send_file, send_from_directory
+import difflib
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.shared import Pt
 from flask_cors import CORS
 from PIL import Image
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
@@ -43,11 +56,6 @@ import speech_recognition as sr
 from pydub import AudioSegment
 from bs4 import BeautifulSoup
 from fpdf import FPDF
-import fitz  # PyMuPDF
-import firebase_admin
-from firebase_admin import credentials, db, auth
-import cloudinary
-import cloudinary.uploader
 
 # --- Flask & Environment Setup ---
 
@@ -297,6 +305,171 @@ def store_url_in_firebase(url, category, filename):
     return True
 
 # --- Phone & Email Verification Functions ---
+"""
+--- AI Notes Generator ---
+"""
+
+def extract_text_for_notes(file_storage):
+    """Extract raw text from PDF, DOCX, or TXT for notes generation."""
+    filename = file_storage.filename.lower()
+    ext = os.path.splitext(filename)[1]
+    file_storage.seek(0)
+    if ext == '.pdf':
+        try:
+            import fitz
+            doc = fitz.open(stream=file_storage.read(), filetype="pdf")
+            text = "".join(page.get_text() for page in doc)
+            return text.strip()
+        except Exception as e:
+            return f"[PDF extraction error: {e}]"
+    elif ext == '.docx':
+        try:
+            from docx import Document
+            file_storage.seek(0)
+            doc = Document(file_storage)
+            return "\n".join([p.text for p in doc.paragraphs]).strip()
+        except Exception as e:
+            return f"[DOCX extraction error: {e}]"
+    elif ext == '.txt':
+        try:
+            return file_storage.read().decode(errors='ignore')
+        except Exception as e:
+            return f"[TXT extraction error: {e}]"
+    else:
+        return "[Unsupported file type]"
+
+def save_notes_to_docx(notes: str, output_path: str):
+    from docx import Document
+    from docx.shared import Pt
+    doc = Document()
+    for line in notes.split("\n"):
+        if line.startswith("## "):
+            doc.add_heading(line.replace("## ", "").strip(), level=1)
+        elif line.startswith("- "):
+            doc.add_paragraph(line.replace("- ", "").strip(), style="List Bullet")
+        else:
+            text = line.strip()
+            if text:
+                p = doc.add_paragraph(text)
+                if p.runs:
+                    p.runs[0].font.size = Pt(11)
+    doc.save(output_path)
+
+def save_notes_to_pdf(notes: str, output_path: str):
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+    c = canvas.Canvas(output_path, pagesize=A4)
+    width, height = A4
+    x, y = 50, height - 50
+    for line in notes.split("\n"):
+        if line.startswith("## "):
+            c.setFont("Helvetica-Bold", 14)
+            c.drawString(x, y, line.replace("## ", "").strip())
+        elif line.startswith("- "):
+            c.setFont("Helvetica", 11)
+            c.drawString(x + 20, y, "• " + line.replace("- ", "").strip())
+        else:
+            c.setFont("Helvetica", 11)
+            c.drawString(x, y, line.strip())
+        y -= 18
+        if y < 50:
+            c.showPage()
+            y = height - 50
+    c.save()
+
+def generate_notes_with_openrouter(raw_text):
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": OPENROUTER_MODEL,
+        "messages": [
+            {"role": "system", "content": "You are an assistant that creates concise, structured, point-wise notes for documents. Use bullet points, numbers, or clear sections, but do NOT use any hashtags (#), markdown headings, or heading symbols. Only output clean, readable notes."},
+            {"role": "user", "content": f"Document content:\n\n{raw_text}\n\nSummarize this into structured, point-wise notes with bullets or numbers, but do not use any hashtags or markdown heading symbols anywhere in your answer."}
+        ]
+    }
+    response = requests.post(OPENROUTER_API_URL, headers=headers, json=payload)
+    if response.status_code == 200:
+        result = response.json()
+        notes = result["choices"][0]["message"]["content"]
+        return notes.strip()
+    else:
+        raise Exception(f"Error: {response.status_code} - {response.text}")
+
+# --- Flask Route: AI Notes Generator ---
+@app.route('/ai_notes_generator', methods=['POST'])
+@login_required
+def ai_notes_generator():
+    """Upload a document, generate AI notes, and return download links."""
+    if 'document' not in request.files:
+        return jsonify({"error": "No file part in the request."}), 400
+    file_storage = request.files['document']
+    filename = secure_filename(file_storage.filename)
+    raw_text = extract_text_for_notes(file_storage)
+    try:
+        notes = generate_notes_with_openrouter(raw_text)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    # Save notes to files (no upload yet)
+    output_dir = os.path.join(tempfile.gettempdir(), f"notes_{uuid.uuid4().hex}")
+    os.makedirs(output_dir, exist_ok=True)
+    docx_path = os.path.join(output_dir, "notes.docx")
+    pdf_path = os.path.join(output_dir, "notes.pdf")
+    save_notes_to_docx(notes, docx_path)
+    save_notes_to_pdf(notes, pdf_path)
+
+    # Store results in session for download (no upload yet)
+    session['ai_notes_generator_results'] = {
+        "notes": notes,
+        "docx_file": docx_path,
+        "pdf_file": pdf_path,
+        "filename": filename
+    }
+    return jsonify({"notes": notes, "filename": filename})
+
+# --- Flask Route: Download AI Notes PDF ---
+@app.route('/download_ai_notes_pdf', methods=['GET'])
+@login_required
+def download_ai_notes_pdf():
+    results = session.get('ai_notes_generator_results')
+    if not results or not os.path.exists(results['pdf_file']):
+        return jsonify({"error": "No PDF file found. Please generate notes first."}), 400
+    filename = results['filename']
+    pdf_path = results['pdf_file']
+    # Upload to Cloudinary
+    with open(pdf_path, "rb") as pdf_file:
+        pdf_upload = cloudinary.uploader.upload(pdf_file, resource_type='raw', folder='ai_notes_generator', public_id=f"{filename}_notes_pdf")
+    pdf_url = pdf_upload.get('secure_url')
+    # Store URL in Firebase
+    store_url_in_firebase(pdf_url, 'ai_notes_generator', f"{filename}_notes.pdf")
+    # Send file for download
+    from flask import send_file
+    return send_file(pdf_path, as_attachment=True, download_name=f"{filename}_notes.pdf", mimetype='application/pdf')
+
+# --- Flask Route: Download AI Notes DOCX ---
+@app.route('/download_ai_notes_docx', methods=['GET'])
+@login_required
+def download_ai_notes_docx():
+    results = session.get('ai_notes_generator_results')
+    if not results or not os.path.exists(results['docx_file']):
+        return jsonify({"error": "No DOCX file found. Please generate notes first."}), 400
+    filename = results['filename']
+    docx_path = results['docx_file']
+    # Upload to Cloudinary
+    with open(docx_path, "rb") as docx_file:
+        docx_upload = cloudinary.uploader.upload(docx_file, resource_type='raw', folder='ai_notes_generator', public_id=f"{filename}_notes_docx")
+    docx_url = docx_upload.get('secure_url')
+    # Store URL in Firebase
+    store_url_in_firebase(docx_url, 'ai_notes_generator', f"{filename}_notes.docx")
+    # Send file for download
+    from flask import send_file
+    return send_file(docx_path, as_attachment=True, download_name=f"{filename}_notes.docx", mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+# Render the AI Notes Generator page
+@app.route('/ai_notes_generator', methods=['GET'])
+@login_required
+def ai_notes_generator_page():
+    return render_template('ai_notes_generator.html', **get_user_context())
 
 def is_production_mode():
     """Check if we're running in production mode with real credentials"""
@@ -3937,11 +4110,48 @@ def extract_text_for_table(file_storage):
     else:
         return "[Unsupported file type]"
 
-def convert_unstructured_to_table_with_openrouter(text, output_format='csv'):
-    prompt = (
-        "Convert the following unstructured data into a clean, well-structured table. "
-        "Return the result as a PDF-friendly table (use markdown or plain text table format). If the data is not tabular, extract any possible fields and organize them as best as possible.\n\n{text}"
-    ).format(text=text)
+def convert_unstructured_to_table_with_openrouter(text: str, user_prompt: str = "", target_rows: int = None, target_cols: int = None, retry: bool = False):
+    """Call OpenRouter to convert unstructured text to a markdown table with strict constraints.
+
+    Requirements enforced via prompt engineering:
+      - Output ONLY a markdown table (pipe syntax) with a single header row.
+      - Exact column and row counts as specified.
+      - No extra commentary before or after the table.
+      - Structured data extraction based on user intent.
+    """
+    # Build dynamic constraints from requested rows / columns
+    constraint_lines = []
+    if target_cols:
+        constraint_lines.append(f"EXACT number of columns (including header): {target_cols}.")
+    else:
+        constraint_lines.append("Columns: infer minimal meaningful set (<=8).")
+    if target_rows is not None:
+        constraint_lines.append(f"EXACT number of DATA rows (excluding header): {target_rows}.")
+    else:
+        constraint_lines.append("Data rows: concise; avoid duplicates; <= 120.")
+    
+    retry_note = "CRITICAL: Previous attempt failed validation. You MUST produce exactly the requested structure." if retry else ""
+    
+    core_instructions = (
+        "You are a data extraction expert. Convert the following unstructured data into a markdown table. "
+        "Output ONLY the table using pipe (|) syntax - no code fences, no explanations, no additional text.\n"
+        + (f"{retry_note}\n" if retry_note else "") +
+        "STRICT REQUIREMENTS:\n"
+        + "• " + "\n• ".join(constraint_lines) + "\n"
+        + "• Header row followed by exactly the requested number of data rows\n"
+        + "• Each row must have identical column count\n"
+        + "• If data is insufficient, use 'N/A' or relevant placeholder\n"
+        + "• Truncate any cell content over 500 characters with '...'\n"
+        + "• Focus on extracting the most relevant information\n"
+        + "• Do NOT add separator lines (--- | ---) between header and data\n"
+        + "• Use standard markdown table format: | Col1 | Col2 |\n"
+    )
+    
+    if user_prompt:
+        core_instructions += f"\nUSER SPECIFIC REQUEST: {user_prompt.strip()}\n"
+    
+    final_prompt = f"{core_instructions}\nSOURCE DATA:\n{text[:15000]}"
+    
     headers = {
         'Authorization': f'Bearer {OPENROUTER_API_KEY}',
         'Content-Type': 'application/json',
@@ -3949,11 +4159,11 @@ def convert_unstructured_to_table_with_openrouter(text, output_format='csv'):
     data = {
         "model": OPENROUTER_MODEL,
         "messages": [
-            {"role": "system", "content": "You are a data extraction and table formatting expert."},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": "You are a precise data extraction system that outputs ONLY markdown tables in the exact format requested. Never add explanations, code blocks, or extra text."},
+            {"role": "user", "content": final_prompt}
         ],
-        "max_tokens": 1200,
-        "temperature": 0.3
+        "max_tokens": 2000,
+        "temperature": 0.1
     }
     try:
         response = requests.post(OPENROUTER_API_URL, headers=headers, json=data, timeout=90)
@@ -3964,6 +4174,76 @@ def convert_unstructured_to_table_with_openrouter(text, output_format='csv'):
     except Exception as e:
         return f"[OpenRouter API error: {e}]"
 
+def _parse_table_user_directives(user_prompt: str):
+    """Extract structural directives (rows/columns) & focus terms from user prompt.
+
+    Returns dict keys:
+      target_rows: int|None (# of data rows requested, excludes header)
+      target_cols: int|None
+      focus_terms: list[str]
+    """
+    import re
+    lower = (user_prompt or '').lower()
+    
+    # Enhanced patterns to handle text numbers and various phrasings
+    number_words = {
+        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+        'single': 1, 'double': 2, 'triple': 3
+    }
+    
+    def extract_number(text):
+        # Try digit first
+        digit_match = re.search(r'\b(\d{1,2})\b', text)
+        if digit_match:
+            return int(digit_match.group(1))
+        # Try word numbers
+        for word, num in number_words.items():
+            if word in text:
+                return num
+        return None
+    
+    # Column patterns - more flexible matching
+    col_patterns = [
+        r'(?:in|with|exactly|only|make|create|using|format)\s+(?:[\w\s]*?)(\w+)\s*(?:cols?|columns?)',
+        r'(\w+)\s*(?:cols?|columns?)(?:\s+(?:and|,))?',
+        r'(?:into|as)\s+(?:[\w\s]*?)(\w+)\s*(?:cols?|columns?)'
+    ]
+    
+    row_patterns = [
+        r'(?:in|with|exactly|only|make|create|using|format)\s+(?:[\w\s]*?)(\w+)\s*(?:rows?)',
+        r'(\w+)\s*(?:rows?)(?:\s+(?:and|,))?',
+        r'(?:into|as)\s+(?:[\w\s]*?)(\w+)\s*(?:rows?)'
+    ]
+    
+    target_cols = None
+    target_rows = None
+    
+    # Try column patterns
+    for pattern in col_patterns:
+        match = re.search(pattern, lower)
+        if match:
+            target_cols = extract_number(match.group(1))
+            if target_cols:
+                break
+    
+    # Try row patterns  
+    for pattern in row_patterns:
+        match = re.search(pattern, lower)
+        if match:
+            target_rows = extract_number(match.group(1))
+            if target_rows:
+                break
+    
+    # Token extraction for focus terms
+    stop = { 'extract','table','format','only','row','rows','column','columns','convert','information','info','data','in','a','the','to','and','as','of','for','make','produce','output','generate','whole','document','all','entire','create','using','into'}
+    tokens = [t.strip('.,;:') for t in re.split(r'\s+', lower) if t.strip('.,;:')]
+    focus_terms = []
+    for t in tokens:
+        if len(t) > 3 and t not in stop and t.isalpha() and t not in number_words:
+            if t not in focus_terms:
+                focus_terms.append(t)
+    return { 'target_rows': target_rows, 'target_cols': target_cols, 'focus_terms': focus_terms }
+
 # --- Flask Route: AI Table Converter ---
 @app.route('/ai_table_converter', methods=['POST'])
 @login_required
@@ -3971,91 +4251,233 @@ def ai_table_converter():
     if 'datafile' not in request.files:
         return jsonify({"error": "No file part in the request."}), 400
     file_storage = request.files['datafile']
-    filename = secure_filename(file_storage.filename)
+    _ = secure_filename(file_storage.filename)
+    user_prompt = request.form.get('prompt', '').strip()
+    if not user_prompt:
+        return jsonify({"error": "Prompt required. Please specify desired rows & columns, e.g. 'Extract in 3 columns and 2 rows'."}), 400
     text = extract_text_for_table(file_storage)
-    # Only PDF output is allowed
-    ai_response = convert_unstructured_to_table_with_openrouter(text, 'pdf')
-    # Log the AI response for debugging
-    print('AI Table Converter AI response:', ai_response)
-    output = io.BytesIO()
+    directives = _parse_table_user_directives(user_prompt)
+    target_rows = directives.get('target_rows')
+    target_cols = directives.get('target_cols')
+    if target_rows is None or target_cols is None:
+        return jsonify({"error": "Please include both a row count and a column count in your prompt (e.g. 'in 3 columns and 2 rows')."}), 400
+    ai_response = convert_unstructured_to_table_with_openrouter(text, user_prompt, target_rows=target_rows, target_cols=target_cols)
+    print('AI Table Converter AI raw response:', ai_response)
+    # Parse markdown table
+    import re, csv
+    table_data = []
+    if not ai_response.startswith('['):  # crude error check
+        # Extract first markdown table block only
+        md_match = re.search(r"((?:\|[^\n]*\|\n?){2,})", ai_response)
+        if md_match:
+            lines = [ln.strip() for ln in md_match.group(1).splitlines() if ln.strip() and '|' in ln]
+            for ln in lines:
+                row = [c.strip() for c in ln.strip('|').split('|')]
+                table_data.append(row)
+            # Remove separator row like --- | ---
+            if len(table_data) > 1 and all(re.match(r"^:?-{3,}:?$", c) for c in table_data[1]):
+                table_data.pop(1)
+        if not table_data:
+            # Try CSV fallback
+            try:
+                for row in csv.reader(ai_response.splitlines()):
+                    if row:
+                        table_data.append([c.strip() for c in row])
+            except Exception:
+                pass
+    # Sanitize & normalize
+    if table_data:
+        max_cols = max(len(r) for r in table_data)
+        cleaned = []
+        for r in table_data:
+            # pad or trim
+            if len(r) < max_cols:
+                r = r + [""] * (max_cols - len(r))
+            elif len(r) > max_cols:
+                r = r[:max_cols]
+            new_row = []
+            for cell in r:
+                cell = (cell or '').replace('\r', ' ').replace('\n', ' ').strip()
+                if len(cell) > 500:
+                    cell = cell[:497].rstrip() + '...'
+                new_row.append(cell)
+            cleaned.append(new_row)
+        table_data = cleaned
+    else:
+        # Represent as a single cell fallback
+        table_data = [[ai_response[:500] + ('...' if len(ai_response) > 500 else '')]]
+    # Apply user directives (single-row, focus terms)
+    # Validate counts; if mismatch do a single retry with stricter flag
+    try:
+        header = table_data[0] if table_data else []
+        data_rows = table_data[1:] if len(table_data) > 1 else []
+        mismatch = False
+        if len(header) != target_cols:
+            mismatch = True
+        if len(data_rows) != target_rows:
+            mismatch = True
+        if mismatch:
+            # Retry once with strict flag
+            retry_response = convert_unstructured_to_table_with_openrouter(text, user_prompt, target_rows=target_rows, target_cols=target_cols, retry=True)
+            if retry_response and not retry_response.startswith('['):
+                ai_response2 = retry_response
+                # reparse same way
+                table_data_retry = []
+                md_match2 = re.search(r"((?:\|[^\n]*\|\n?){2,})", ai_response2)
+                if md_match2:
+                    lines2 = [ln.strip() for ln in md_match2.group(1).splitlines() if ln.strip() and '|' in ln]
+                    for ln in lines2:
+                        row2 = [c.strip() for c in ln.strip('|').split('|')]
+                        table_data_retry.append(row2)
+                    if len(table_data_retry) > 1 and all(re.match(r"^:?-{3,}:?$", c) for c in table_data_retry[1]):
+                        table_data_retry.pop(1)
+                if table_data_retry:
+                    table_data = table_data_retry
+                    header = table_data[0]
+                    data_rows = table_data[1:] if len(table_data) > 1 else []
+            # Final validation
+            if len(header) != target_cols or len(data_rows) != target_rows:
+                return jsonify({
+                    "error": f"Model did not comply. Wanted {target_cols} cols & {target_rows} rows, got {len(header)} cols & {len(data_rows)} rows. Please rephrase prompt."})
+    except Exception as _val_e:
+        print('Validation error:', _val_e)
+    # Store in session for later PDF download
+    session['table_converter_data'] = table_data
+    return jsonify({
+        "status": "ok",
+        "preview": table_data[:50],  # limit preview rows
+        "rows": len(table_data),
+        "cols": len(table_data[0]) if table_data else 0
+    })
+
+@app.route('/download_table_pdf')
+@login_required
+def download_table_pdf():
+    table_data = session.get('table_converter_data')
+    if not table_data:
+        return jsonify({"error": "No table data in session. Please convert first."}), 400
     try:
         from fpdf import FPDF
-        import csv
-        import re
+        output = io.BytesIO()
         pdf = FPDF()
         pdf.add_page()
         pdf.set_auto_page_break(auto=True, margin=15)
-        # Use Helvetica (always available)
         pdf.set_font('helvetica', 'B', 14)
         pdf.cell(0, 10, 'AI Table Converter Output', ln=True, align='C')
         pdf.ln(6)
-        pdf.set_font('helvetica', '', 11)
-        left_margin = 15
-        right_margin = 15
+        left_margin, right_margin = 15, 15
         effective_page_width = pdf.w - left_margin - right_margin
         pdf.set_left_margin(left_margin)
         pdf.set_right_margin(right_margin)
-        pdf.set_xy(left_margin, pdf.get_y())
-
-        # Try to parse markdown or CSV table from AI response
-        table_data = []
-        # Try markdown table
-        md_table = re.findall(r"((?:\|.+\|\n)+)", ai_response)
-        if md_table:
-            lines = [line.strip() for line in md_table[0].split('\n') if line.strip() and '|' in line]
-            for line in lines:
-                row = [cell.strip() for cell in line.strip('|').split('|')]
-                table_data.append(row)
-            # Remove markdown separator row if present
-            if len(table_data) > 1 and all(re.match(r"^:?-+:?$", cell) for cell in table_data[1]):
-                table_data.pop(1)
-        else:
-            # Try CSV
-            try:
-                csv_reader = csv.reader(ai_response.splitlines())
-                for row in csv_reader:
-                    if row:
-                        table_data.append([cell.strip() for cell in row])
-            except Exception:
-                pass
-
-        if table_data and len(table_data) > 1:
-            # Render as table
-            col_count = max(len(row) for row in table_data)
-            col_width = effective_page_width / col_count
-            pdf.set_font('helvetica', 'B', 11)
-            for cell in table_data[0]:
-                pdf.cell(col_width, 8, str(cell), border=1, align='C')
-            pdf.ln(8)
-            pdf.set_font('helvetica', '', 11)
-            for row in table_data[1:]:
-                for cell in row:
-                    pdf.cell(col_width, 8, str(cell), border=1, align='L')
-                pdf.ln(8)
-        else:
-            # Fallback: plain text, wrapped
-            pdf.multi_cell(effective_page_width, 8, ai_response, align='L')
-
+        # Determine column widths proportional to header length
+        header = table_data[0]
+        lengths = [max(3, len(h)) for h in header]
+        total = sum(lengths)
+        col_widths = [effective_page_width * (l / total) for l in lengths]
+        line_height = 7
+        # Helper to wrap text into lines fitting width
+        def wrap_text(txt, width):
+            if not txt:
+                return ['']
+            words = txt.split()
+            lines = []
+            current = ''
+            for w in words:
+                test = f"{current} {w}".strip()
+                if pdf.get_string_width(test) <= width - 1:
+                    current = test
+                else:
+                    if current:
+                        lines.append(current)
+                    # If single word too long, hard split
+                    if pdf.get_string_width(w) > width - 1:
+                        chunk = ''
+                        for ch in w:
+                            if pdf.get_string_width(chunk + ch) <= width - 1:
+                                chunk += ch
+                            else:
+                                lines.append(chunk)
+                                chunk = ch
+                        if chunk:
+                            current = chunk
+                        else:
+                            current = ''
+                    else:
+                        current = w
+            if current:
+                lines.append(current)
+            return lines or ['']
+        # Render header
+        pdf.set_font('helvetica', 'B', 11)
+        max_header_lines = 1
+        rows_to_render = table_data
+        # Compute height first for header lines
+        header_lines = [wrap_text(h, col_widths[i]) for i, h in enumerate(header)]
+        max_header_lines = max(len(l) for l in header_lines)
+        row_height = line_height * max_header_lines
+        y_start = pdf.get_y()
+        x_start = pdf.get_x()
+        for i, h_lines in enumerate(header_lines):
+            x = pdf.get_x()
+            y = pdf.get_y()
+            pdf.rect(x, y, col_widths[i], row_height)
+            for idx, l in enumerate(h_lines):
+                pdf.set_xy(x + 1, y + idx * line_height + 1)
+                pdf.cell(col_widths[i] - 2, line_height, l, ln=0)
+            pdf.set_xy(x + col_widths[i], y)
+        pdf.set_xy(x_start, y_start + row_height)
+        # Body
+        pdf.set_font('helvetica', '', 10)
+        for r in rows_to_render[1:]:
+            wrapped = [wrap_text(c, col_widths[i]) for i, c in enumerate(r)]
+            max_lines = max(len(w) for w in wrapped)
+            row_height = line_height * max_lines
+            # New page check
+            if pdf.get_y() + row_height > pdf.h - 15:
+                pdf.add_page()
+                pdf.set_font('helvetica', 'B', 11)
+                # repeat header on new page
+                header_lines = [wrap_text(h, col_widths[i]) for i, h in enumerate(header)]
+                max_header_lines = max(len(l) for l in header_lines)
+                row_h2 = line_height * max_header_lines
+                y_start2 = pdf.get_y()
+                x_start2 = pdf.get_x()
+                for i, h_lines in enumerate(header_lines):
+                    x = pdf.get_x(); y = pdf.get_y()
+                    pdf.rect(x, y, col_widths[i], row_h2)
+                    for idx, l in enumerate(h_lines):
+                        pdf.set_xy(x + 1, y + idx * line_height + 1)
+                        pdf.cell(col_widths[i] - 2, line_height, l, ln=0)
+                    pdf.set_xy(x + col_widths[i], y)
+                pdf.set_xy(x_start2, y_start2 + row_h2)
+                pdf.set_font('helvetica', '', 10)
+            y_row = pdf.get_y()
+            for i, lines in enumerate(wrapped):
+                x = pdf.get_x()
+                pdf.rect(x, y_row, col_widths[i], row_height)
+                for idx, l in enumerate(lines):
+                    pdf.set_xy(x + 1, y_row + idx * line_height + 1)
+                    pdf.cell(col_widths[i] - 2, line_height, l, ln=0)
+                pdf.set_xy(x + col_widths[i], y_row)
+            pdf.set_xy(pdf.get_x() - sum(col_widths), y_row + row_height)
+        # Generate bytes (force latin1 to avoid Unicode issues for FPDF base fonts)
         pdf_bytes = pdf.output(dest='S').encode('latin1', errors='replace')
         output.write(pdf_bytes)
-        mimetype = 'application/pdf'
+        output.seek(0)
+        out_filename = f"table_conversion_{int(time.time())}.pdf"
+        # Upload on-demand now
+        try:
+            cloudinary_result = cloudinary.uploader.upload(output, resource_type='raw', folder='table_converter', public_id=out_filename)
+            url_cloudinary = cloudinary_result.get('secure_url')
+            store_url_in_firebase(url_cloudinary, 'table_converter', out_filename)
+        except Exception as ue:
+            print('Cloudinary upload error (download_table_pdf):', ue)
+            return jsonify({"error": f"Cloudinary upload error: {ue}"}), 500
+        output.seek(0)
+        return send_file(output, as_attachment=True, download_name=out_filename, mimetype='application/pdf')
     except Exception as e:
-        print('PDF export error:', e)
-        return jsonify({"error": f"PDF export error: {e}"}), 500
-    output.seek(0)
-    out_filename = f"table_conversion_{int(time.time())}.pdf"
-    try:
-        # Always upload to Cloudinary after conversion
-        cloudinary_result = cloudinary.uploader.upload(output, resource_type='raw', folder='table_converter', public_id=out_filename)
-        url_cloudinary = cloudinary_result.get('secure_url')
-        store_url_in_firebase(url_cloudinary, 'table_converter', out_filename)
-    except Exception as e:
-        print('Cloudinary upload error:', e)
-        return jsonify({"error": f"Cloudinary upload error: {e}"}), 500
-    return jsonify({
-        "filename": out_filename,
-        "download_url": url_cloudinary
-    })
+        print('PDF generation error:', e)
+        return jsonify({"error": f"PDF generation error: {e}"}), 500
 
 # --- Download from Cloudinary as attachment ---
 @app.route('/download_table/<filename>')
@@ -4088,6 +4510,482 @@ def download_table(filename):
 def ai_table_converter_page():
     return render_template('ai_table_converter.html', **get_user_context())
 
+# --- AI PDF Comparison Tool ---
+
+def extract_text_from_pdf_comparison(pdf_file):
+    """Extract text from a PDF file object using PyMuPDF."""
+    text = []
+    try:
+        pdf_file.seek(0)
+        with fitz.open(stream=pdf_file.read()) as doc:
+            for page in doc:
+                page_text = page.get_text("text")
+                if page_text:
+                    text.append(page_text)
+    except Exception as e:
+        return f"[PDF extraction error: {e}]"
+    return "\n\n".join(text).strip()
+
+def call_openrouter_compare(text_a: str, text_b: str, max_chars=20000) -> dict:
+    """Call OpenRouter to compare two documents semantically and return structured JSON."""
+    # Truncate if very large
+    if len(text_a) + len(text_b) > max_chars:
+        half = max_chars // 4
+        text_a = text_a[:half] + "\n\n...[truncated]...\n\n" + text_a[-half:]
+        text_b = text_b[:half] + "\n\n...[truncated]...\n\n" + text_b[-half:]
+
+    system_prompt = (
+        "You are an assistant that compares two document versions. "
+        "Return a JSON object with two keys: 'summary' (a brief executive summary string) "
+        "and 'changes' (an array). Each change must be an object with these fields:\n"
+        "  - section: short heading or location (string)\n"
+        "  - old: the text in the old document (string) or empty if added\n"
+        "  - new: the text in the new document (string) or empty if removed\n"
+        "  - status: one of 'added','removed','modified'\n"
+        "  - notes: brief natural-language note about the change\n\n"
+        "Return valid JSON only, nothing else. Keep notes short (1-2 sentences)."
+    )
+
+    user_prompt = (
+        "COMPARE DOC A and DOC B.\n\n"
+        "DOCUMENT A:\n"
+        f"{text_a}\n\n"
+        "DOCUMENT B:\n"
+        f"{text_b}\n\n"
+        "Produce the JSON result as described."
+    )
+
+    headers = {
+        'Authorization': f'Bearer {OPENROUTER_API_KEY}',
+        'Content-Type': 'application/json',
+    }
+    data = {
+        "model": OPENROUTER_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        "max_tokens": 3000,
+        "temperature": 0.0
+    }
+
+    try:
+        response = requests.post(OPENROUTER_API_URL, headers=headers, json=data, timeout=120)
+        response.raise_for_status()
+        result = response.json()
+        content = result.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+        
+        # Extract JSON from response
+        start = content.find("{")
+        end = content.rfind("}")
+        if start != -1 and end != -1:
+            json_text = content[start:end+1]
+        else:
+            json_text = content
+        parsed = json.loads(json_text)
+        return parsed
+    except Exception as e:
+        # Fallback to simple diff
+        return fallback_text_diff(text_a, text_b)
+
+def fallback_text_diff(text_a: str, text_b: str, max_changes=50) -> dict:
+    """Simple fallback: use difflib to generate line-based differences."""
+    a_lines = text_a.splitlines()
+    b_lines = text_b.splitlines()
+    diff = difflib.unified_diff(a_lines, b_lines, lineterm="")
+    changes = []
+    added_count = removed_count = 0
+    
+    for i, line in enumerate(diff):
+        if line.startswith("---") or line.startswith("+++") or line.startswith("@@"):
+            continue
+        if line.startswith("- "):
+            removed_count += 1
+            changes.append({
+                "section": f"Line {i}",
+                "old": line[2:],
+                "new": "",
+                "status": "removed",
+                "notes": "Line removed"
+            })
+        elif line.startswith("+ "):
+            added_count += 1
+            changes.append({
+                "section": f"Line {i}",
+                "old": "",
+                "new": line[2:],
+                "status": "added",
+                "notes": "Line added"
+            })
+        if len(changes) >= max_changes:
+            break
+
+    summary = f"Found {added_count} additions and {removed_count} deletions between documents."
+    return {"summary": summary, "changes": changes}
+
+def generate_comparison_pdf(metadata: dict, comparisons: list) -> io.BytesIO:
+    """Generate a PDF comparison report using reportlab with proper text wrapping."""
+    output = io.BytesIO()
+    doc = SimpleDocTemplate(output, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    # Title
+    title = Paragraph(metadata.get("title", "DocShift AI Comparison Report"), styles['Title'])
+    elements.append(title)
+    elements.append(Spacer(1, 12))
+
+    # Metadata
+    meta_text = f"Old file: {metadata.get('file_a_name','')} &nbsp;&nbsp;&nbsp; New file: {metadata.get('file_b_name','')}<br/>Generated: {metadata.get('generated_at','')}"
+    elements.append(Paragraph(meta_text, styles['Normal']))
+    elements.append(Spacer(1, 12))
+
+    # Executive summary
+    elements.append(Paragraph("<b>Executive Summary</b>", styles['Heading2']))
+    elements.append(Paragraph(metadata.get("summary", ""), styles['Normal']))
+    elements.append(Spacer(1, 12))
+
+    elements.append(Paragraph("<b>Detailed Changes</b>", styles['Heading2']))
+    elements.append(Spacer(1, 8))
+
+    # Custom style for table cells with smaller font and proper wrapping
+    cell_style = ParagraphStyle(
+        'CellText',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=10,
+        wordWrap='LTR',
+        alignment=0,  # Left align
+        spaceAfter=3,
+    )
+
+    # Helper function to create wrapped paragraphs for table cells
+    def create_cell_paragraph(text, max_chars=200):
+        if not text:
+            return Paragraph("", cell_style)
+        
+        # Truncate very long text but preserve word boundaries
+        if len(text) > max_chars:
+            words = text.split()
+            truncated_words = []
+            char_count = 0
+            
+            for word in words:
+                if char_count + len(word) + 1 <= max_chars - 3:  # Leave space for "..."
+                    truncated_words.append(word)
+                    char_count += len(word) + 1
+                else:
+                    break
+            
+            text = " ".join(truncated_words) + "..."
+        
+        # Escape HTML characters and create paragraph
+        escaped_text = html.escape(text)
+        return Paragraph(escaped_text, cell_style)
+
+    # Table header with Paragraph objects
+    header_style = ParagraphStyle(
+        'HeaderText',
+        parent=styles['Normal'],
+        fontSize=10,
+        leading=12,
+        wordWrap='LTR',
+        alignment=1,  # Center align
+        textColor=colors.black,
+        fontName='Helvetica-Bold'
+    )
+
+    table_data = [[
+        Paragraph("Section", header_style),
+        Paragraph("Status", header_style), 
+        Paragraph("Old Content", header_style),
+        Paragraph("New Content", header_style)
+    ]]
+    
+    # Add comparison rows with properly wrapped content
+    for ch in comparisons:
+        # Create section cell with truncation
+        section_text = ch.get("section", "")
+        if len(section_text) > 40:
+            section_text = section_text[:37] + "..."
+        section_para = Paragraph(section_text, cell_style)
+        
+        # Create status cell with color coding
+        status = ch.get("status", "").upper()
+        status_style = ParagraphStyle(
+            'StatusText',
+            parent=cell_style,
+            fontSize=8,
+            fontName='Helvetica-Bold',
+            alignment=1,  # Center align
+        )
+        
+        # Color code the status
+        if status == "ADDED":
+            status_style.textColor = colors.green
+            status_text = "✓ ADDED"
+        elif status == "REMOVED": 
+            status_style.textColor = colors.red
+            status_text = "✗ REMOVED"
+        elif status == "MODIFIED":
+            status_style.textColor = colors.orange
+            status_text = "⚠ MODIFIED"
+        else:
+            status_text = status
+            
+        status_para = Paragraph(status_text, status_style)
+        
+        # Create content cells with proper wrapping
+        old_para = create_cell_paragraph(ch.get("old", ""), 180)
+        new_para = create_cell_paragraph(ch.get("new", ""), 180)
+        
+        table_data.append([section_para, status_para, old_para, new_para])
+
+    # Create table with proper column widths
+    table = Table(table_data, colWidths=[90, 70, 190, 190], repeatRows=1)
+    style = TableStyle([
+        # Header styling
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#e8e8e8")),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+        ('ALIGN', (0,0), (-1,0), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        
+        # Cell styling
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 10),
+        ('BOTTOMPADDING', (0,0), (-1,0), 8),
+        ('TOPPADDING', (0,0), (-1,0), 8),
+        
+        # Grid and borders
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('LINEBELOW', (0,0), (-1,0), 1, colors.black),
+        
+        # Row backgrounds
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor("#f9f9f9")]),
+        
+        # Cell padding
+        ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,1), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 8),
+    ])
+    table.setStyle(style)
+    elements.append(table)
+    elements.append(Spacer(1, 12))
+
+    # Summary footer
+    if comparisons:
+        total_changes = len(comparisons)
+        elements.append(Paragraph(f"<b>Total Changes Found:</b> {total_changes}", styles['Normal']))
+        elements.append(Spacer(1, 8))
+
+    doc.build(elements)
+    output.seek(0)
+    return output
+
+def generate_comparison_docx(metadata: dict, comparisons: list) -> io.BytesIO:
+    """Generate a DOCX comparison report."""
+    from docx import Document
+    output = io.BytesIO()
+    doc = Document()
+    
+    # Title
+    title = doc.add_heading(metadata.get("title", "DocShift AI Comparison Report"), level=1)
+    title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+    # Metadata
+    meta_para = doc.add_paragraph()
+    meta_para.add_run(f"Old file: {metadata.get('file_a_name', '')}\n")
+    meta_para.add_run(f"New file: {metadata.get('file_b_name', '')}\n")
+    meta_para.add_run(f"Generated: {metadata.get('generated_at', '')}\n")
+
+    doc.add_paragraph("")
+
+    # Executive Summary
+    doc.add_heading("Executive Summary", level=2)
+    doc.add_paragraph(metadata.get("summary", ""))
+
+    doc.add_paragraph("")
+    doc.add_heading("Detailed Changes", level=2)
+
+    # Changes
+    for change in comparisons:
+        tbl = doc.add_table(rows=2, cols=3)
+        hdr_cells = tbl.rows[0].cells
+        hdr_cells[0].text = "Section"
+        hdr_cells[1].text = "Old"
+        hdr_cells[2].text = "New"
+
+        row_cells = tbl.rows[1].cells
+        row_cells[0].text = change.get("section", "")
+        row_cells[1].text = change.get("old", "")
+        row_cells[2].text = change.get("new", "")
+
+        p = doc.add_paragraph()
+        p.add_run("Status: ").bold = True
+        p.add_run(change.get("status", ""))
+        if change.get("notes"):
+            p.add_run("\nNotes: ").bold = True
+            p.add_run(change.get("notes", ""))
+        doc.add_paragraph("")
+
+    doc.save(output)
+    output.seek(0)
+    return output
+
+@app.route('/ai_pdf_comparison', methods=['GET'])
+@login_required
+def ai_pdf_comparison_page():
+    return render_template('ai_pdf_comparison.html', **get_user_context())
+
+@app.route('/ai_pdf_comparison', methods=['POST'])
+@login_required
+def ai_pdf_comparison():
+    if 'file_a' not in request.files or 'file_b' not in request.files:
+        return jsonify({"error": "Both PDF files are required."}), 400
+    
+    file_a = request.files['file_a']
+    file_b = request.files['file_b']
+    
+    if not file_a.filename or not file_b.filename:
+        return jsonify({"error": "Please select both PDF files."}), 400
+
+    try:
+        # Extract text from both PDFs
+        text_a = extract_text_from_pdf_comparison(file_a)
+        text_b = extract_text_from_pdf_comparison(file_b)
+        
+        if text_a.startswith('[PDF extraction error') or text_b.startswith('[PDF extraction error'):
+            return jsonify({"error": "Failed to extract text from one or both PDF files."}), 400
+
+        # Compare using OpenRouter
+        comparison_result = call_openrouter_compare(text_a, text_b)
+        summary = comparison_result.get("summary", "")
+        changes = comparison_result.get("changes", [])
+
+        # Generate reports
+        timestamp = datetime.utcnow().strftime("%Y-%m-%d_%H%M%S")
+        metadata = {
+            "title": "DocShift AI Comparison Report",
+            "file_a_name": secure_filename(file_a.filename),
+            "file_b_name": secure_filename(file_b.filename),
+            "generated_at": timestamp,
+            "summary": summary
+        }
+
+        # Store in session for download
+        session['pdf_comparison_data'] = {
+            'metadata': metadata,
+            'changes': changes
+        }
+
+        return jsonify({
+            "status": "ok",
+            "summary": summary,
+            "change_count": len(changes),
+            "preview_changes": changes[:20],  # Preview first 20 changes
+            "total_changes": len(changes),
+            "metadata": {
+                'file_a_name': metadata.get('file_a_name', ''),
+                'file_b_name': metadata.get('file_b_name', ''),
+                'generated_at': metadata.get('generated_at', '')
+            }
+        })
+
+    except Exception as e:
+        print('PDF comparison error:', e)
+        return jsonify({"error": f"Comparison failed: {str(e)}"}), 500
+
+@app.route('/download_comparison_pdf')
+@login_required
+def download_comparison_pdf():
+    comparison_data = session.get('pdf_comparison_data')
+    if not comparison_data:
+        return jsonify({"error": "No comparison data found. Please run comparison first."}), 400
+
+    try:
+        metadata = comparison_data['metadata']
+        changes = comparison_data['changes']
+        
+        # Generate PDF with error handling
+        try:
+            pdf_output = generate_comparison_pdf(metadata, changes)
+        except Exception as pdf_error:
+            print('PDF generation specific error:', pdf_error)
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": f"PDF generation failed: {str(pdf_error)}"}), 500
+        
+        out_filename = f"comparison_report.pdf"
+        
+        # Upload to Cloudinary
+        try:
+            pdf_output.seek(0)  # Reset buffer position
+            cloudinary_result = cloudinary.uploader.upload(
+                pdf_output, 
+                resource_type='raw', 
+                folder='pdf_comparison', 
+                public_id=out_filename
+            )
+            url_cloudinary = cloudinary_result.get('secure_url')
+            store_url_in_firebase(url_cloudinary, 'pdf_comparison', out_filename)
+        except Exception as ue:
+            print('Cloudinary upload error (comparison PDF):', ue)
+            # Continue with direct download even if upload fails
+        
+        pdf_output.seek(0)  # Reset buffer position for download
+        return send_file(
+            pdf_output, 
+            as_attachment=True, 
+            download_name=out_filename, 
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        print('PDF generation error:', e)
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"PDF generation error: {str(e)}"}), 500
+
+@app.route('/download_comparison_docx')
+@login_required
+def download_comparison_docx():
+    comparison_data = session.get('pdf_comparison_data')
+    if not comparison_data:
+        return jsonify({"error": "No comparison data found. Please run comparison first."}), 400
+
+    try:
+        metadata = comparison_data['metadata']
+        changes = comparison_data['changes']
+        
+        # Generate DOCX
+        docx_output = generate_comparison_docx(metadata, changes)
+        out_filename = f"comparison_{metadata['generated_at']}.docx"
+        
+        # Upload to Cloudinary
+        try:
+            cloudinary_result = cloudinary.uploader.upload(
+                docx_output, 
+                resource_type='raw', 
+                folder='pdf_comparison', 
+                public_id=out_filename
+            )
+            url_cloudinary = cloudinary_result.get('secure_url')
+            store_url_in_firebase(url_cloudinary, 'pdf_comparison', out_filename)
+        except Exception as ue:
+            print('Cloudinary upload error (comparison DOCX):', ue)
+            return jsonify({"error": f"Upload error: {ue}"}), 500
+        
+        docx_output.seek(0)
+        return send_file(
+            docx_output, 
+            as_attachment=True, 
+            download_name=out_filename, 
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+    except Exception as e:
+        print('DOCX generation error:', e)
+        return jsonify({"error": f"DOCX generation error: {e}"}), 500
+
 
 # --- Run Flask App ---
 
@@ -4098,4 +4996,4 @@ if __name__ == '__main__':
     print("� Email verification enabled")
     print("📱 Phone/SMS verification DISABLED")
     print("🔥 Firebase SMS functionality has been removed")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)  

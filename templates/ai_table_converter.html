@@ -345,6 +345,14 @@
           </div>
         </form>
         <div id="result-container"></div>
+        <div id="preview-wrapper" style="display:none; width:100%;">
+          <h3 style="color:#39126a;font-size:1.2rem;margin:10px 0 8px 0;">Preview</h3>
+          <div style="max-height:260px;overflow:auto;border:1px solid #d8cbed;border-radius:10px;background:#faf7ff;">
+            <table id="preview-table" style="width:100%;border-collapse:collapse;font-size:0.9rem;word-break:break-word;table-layout:fixed;color:#000;">
+            </table>
+          </div>
+          <button type="button" id="downloadPdfBtn" class="docscreen-btn btn-analyze" style="margin-top:15px;display:none;">Download PDF</button>
+        </div>
       </div>
     </div>
   </div>
@@ -390,37 +398,83 @@
       if (fileList.length === 0) return;
       const formData = new FormData();
       formData.append('datafile', fileList[0]);
-      formData.append('format', 'pdf');
-      // Add prompt value
-      formData.append('prompt', document.getElementById('prompt').value);
+      const promptVal = document.getElementById('prompt').value;
+      formData.append('prompt', promptVal);
       const resultContainer = document.getElementById('result-container');
       resultContainer.innerHTML = '<div style="color:#A259FF;">Converting, please wait...</div>';
-      const response = await fetch('/ai_table_converter', {
-        method: 'POST',
-        body: formData
-      });
+      const response = await fetch('/ai_table_converter', { method: 'POST', body: formData });
       const data = await response.json();
-      if (data.download_url && data.filename) {
-        // Download the file as an attachment using fetch, not by opening the URL
-        fetch(data.download_url)
-          .then(response => response.blob())
-          .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = data.filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            resultContainer.innerHTML = `<div class="result-success">Your table is ready and downloading: <span style='color:#28A745;font-weight:600;'>${data.filename}</span></div>`;
-          })
-          .catch(() => {
-            resultContainer.innerHTML = `<div class=\"result-error\">Download failed. Please try again.</div>`;
-          });
+      if (data.status === 'ok') {
+        resultContainer.innerHTML = `<div class="result-success">Table created successfully.</div>`;
+        buildPreviewTable(data.preview);
+        document.getElementById('preview-wrapper').style.display = 'block';
+        document.getElementById('downloadPdfBtn').style.display = 'inline-block';
       } else {
         resultContainer.innerHTML = `<div class=\"result-error\">${data.error || 'Conversion failed.'}</div>`;
+      }
+    });
+
+    function buildPreviewTable(rows) {
+      const tbl = document.getElementById('preview-table');
+      tbl.innerHTML = '';
+      if (!rows || rows.length === 0) return;
+      // Build header
+      const thead = document.createElement('thead');
+      const hrow = document.createElement('tr');
+      rows[0].forEach(h => {
+        const th = document.createElement('th');
+        th.textContent = h || '';
+        th.style.padding = '6px 8px';
+        th.style.border = '1px solid #ccb9e6';
+        th.style.background = '#efe7fa';
+        th.style.position = 'sticky';
+        th.style.top = '0';
+        th.style.zIndex = '2';
+        th.style.textAlign = 'left';
+        th.style.fontWeight = '600';
+        th.style.fontSize = '0.85rem';
+        th.style.color = '#000';
+        tbl.style.border = '1px solid #ccb9e6';
+        hrow.appendChild(th);
+      });
+      thead.appendChild(hrow);
+      tbl.appendChild(thead);
+      const tbody = document.createElement('tbody');
+      rows.slice(1).forEach(r => {
+        const tr = document.createElement('tr');
+        r.forEach(c => {
+          const td = document.createElement('td');
+          td.textContent = c || '';
+          td.style.padding = '5px 7px';
+          td.style.border = '1px solid #e2d5f3';
+          td.style.verticalAlign = 'top';
+          td.style.whiteSpace = 'normal';
+          td.style.wordBreak = 'break-word';
+          td.style.color = '#000';
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      tbl.appendChild(tbody);
+    }
+
+    document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('downloadPdfBtn');
+      btn.disabled = true; btn.textContent = 'Preparing PDF...';
+      try {
+        const res = await fetch('/download_table_pdf');
+        if (!res.ok) throw new Error('Failed');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `table_conversion.pdf`; document.body.appendChild(a); a.click();
+        setTimeout(()=>{ window.URL.revokeObjectURL(url); a.remove(); }, 500);
+        btn.textContent = 'Download PDF';
+      } catch(e) {
+        alert('PDF download failed');
+        btn.textContent = 'Download PDF';
+      } finally {
+        btn.disabled = false;
       }
     });
   </script>

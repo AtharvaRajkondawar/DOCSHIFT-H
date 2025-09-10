@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Notes Generator - DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --btn-black: #000;
+      --btn-accent-hover: #c193ff;
+      --dropdown-bg: #fff;
+      --dropdown-link-hover: #dedcff;
+      --dropdown-link-color: #21003b;
+    }
+    body { margin: 0; padding: 0; min-height: 100vh; background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%); font-family: 'Inter', Arial, sans-serif; color: var(--white); display: flex; flex-direction: column; }
+    nav {
+      background: var(--navbar-bg);
+      height: 72px;
+      display: flex;
+      align-items: center;
+      padding: 0 48px;
+      box-sizing: border-box;
+      z-index: 1000;
+      position: relative;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      margin-right: 21px;
+      margin-top: 2px;
+    }
+    .brand-logo img {
+      height: 62px;
+      width: 138px;
+      object-fit: contain;
+      border-radius: 10px;
+      user-select: none;
+      -webkit-user-drag: none;
+      transition: box-shadow 0.25s;
+      background: transparent;
+    }
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 1.7rem;
+      height: 100%;
+      position: relative;
+      z-index: 1001;
+      flex-wrap: nowrap;
+    }
+    .nav-links a,
+    .dropdown-toggle {
+      color: var(--white);
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 1.13rem;
+      padding: 10px 18px 8px 18px;
+      border-radius: 8px;
+      transition: background 0.19s, color 0.18s, box-shadow 0.19s;
+      cursor: pointer;
+      background: none;
+      border: none;
+      outline: none;
+      display: inline-block;
+      white-space: nowrap;
+      user-select: none;
+      opacity: 0.93;
+      box-shadow: none;
+      position: relative;
+    }
+    .nav-links a.active,
+    .nav-links a:hover,
+    .dropdown-toggle:focus,
+    .dropdown-toggle:hover {
+      opacity: 1;
+      color: var(--white);
+    }
+    .logout-link {
+      color: #ff4e54;
+      font-weight: 600;
+      border: 1.5px solid #ff4e54;
+      background: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      transition: background 0.17s, color 0.13s;
+      margin-left: 22px;
+    }
+    .logout-link:hover {
+      background: #28102b;
+      color: #fff;
+      box-shadow: 0 4px 18px rgba(186,0,84,0.13);
+    }
+    .user-profile {
+      position: relative;
+      display: inline-block;
+      margin-left: 10px;
+    }
+    .profile-icon {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      object-fit: cover;
+    }
+    .profile-icon:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+    }
+    .profile-dropdown {
+      display: none;
+      position: absolute;
+      top: 45px;
+      right: 0;
+      width: 200px;
+      height: 175px;
+      background: #1B0039;
+      opacity: 0.8;
+      border-radius: 20px 0px 20px 20px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      z-index: 9999;
+      padding: 8px 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      align-content: flex-start;
+    }
+    .user-profile:hover .profile-dropdown {
+      display: flex;
+      opacity: 0.8;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .profile-dropdown::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      right: 12px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 8px solid #1B0039;
+    }
+    .profile-dropdown-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      flex: 0 1 auto;
+      min-width: 120px;
+      margin: 4px;
+      border-radius: 8px;
+      justify-content: flex-start;
+      text-align: left;
+    }
+    .profile-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    .profile-dropdown-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    .profile-dropdown-item.logout:hover {
+      background-color: rgba(255, 107, 107, 0.1);
+    }
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    .dropdown-toggle::after {
+      content: '▼';
+      margin-left: 7px;
+      font-size: 0.83em;
+      color: var(--white);
+      vertical-align: middle;
+      transition: transform 0.22s;
+      display: inline-block;
+    }
+    .dropdown:focus-within .dropdown-toggle::after,
+    .dropdown:hover .dropdown-toggle::after {
+      transform: rotate(180deg);
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 58px;
+      left: -120px;
+      background: var(--dropdown-bg);
+      box-shadow: 0 14px 42px 0 rgba(40,25,67,0.22), 0 2px 12px 0 rgba(40,25,67,0.12);
+      border-radius: 17px;
+      z-index: 9999;
+      padding: 15px 26px 11px 17px;
+      min-width: 410px;
+      max-width: 540px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 9px 11px;
+      transition: opacity 0.28s, visibility 0.28s;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      display: grid;
+    }
+    .dropdown:focus-within .dropdown-content,
+    .dropdown:hover .dropdown-content {
+      display: grid;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: all;
+    }
+    .dropdown-content a {
+      color: #14131c;
+      font-weight: 600;
+      background: #fff;
+      padding: 11px 20px 9px 13px;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: background 0.13s, color 0.11s, box-shadow 0.19s;
+      text-decoration: none;
+      border: none;
+      display: block;
+      letter-spacing: 0.01em;
+      outline: none;
+      box-shadow: none;
+      text-align: left;
+    }
+    .dropdown-content a:hover,
+    .dropdown-content a:focus {
+      background: var(--dropdown-link-hover);
+      color: var(--dropdown-link-color);
+      box-shadow: 0 1.5px 8px 0 #a259ff27;
+    }
+    @media (max-width: 950px) {
+      nav { padding: 0 13px; }
+      .brand-logo img { height: 48px; width: 98px; }
+      .nav-links { gap: 1rem; }
+      .dropdown-content { min-width: 240px; padding: 11px 6px 8px 7px; }
+    }
+    @media (max-width: 680px) {
+      nav { flex-direction: column; height: auto; padding: 0 0 7px 0; }
+      .brand-logo { margin: 5px 0 4px 0; }
+      .nav-links { width: 100%; gap: 7px; justify-content: flex-start;}
+    }
+    .docscreen-outer { min-height: calc(100vh - 110px); display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;}
+    .docscreen-card { background: #fff; border-radius: 22px; box-shadow: 0 4px 40px rgba(40,0,85,0.22); display: flex; align-items: stretch; max-width: 1040px; min-width: 320px; width: 96vw; padding: 49px 54px 39px 42px; gap: 67px; margin: 55px auto 38px auto;}
+    .docscreen-formside { flex: 1 1 488px; display: flex; flex-direction: column; align-items: flex-start; min-width: 300px; }
+    .docscreen-formside h1 { font-size: 2.18rem; font-weight: 700; color: #1A0326; margin-bottom: 19px; margin-top:0; letter-spacing: 0.01em; }
+    .docscreen-input-row { width: 100%; display: flex; gap: 11px; margin-bottom: 20px; }
+    .docscreen-upload-label { display: flex; align-items: center; background: #EFEAFB; border-radius: 9px; padding: 10px 21px; color: #39126a; font-size: 1.1rem; font-weight: 600; cursor: pointer; user-select: none; border: none; outline:none; transition: background 0.15s, transform 0.1s; }
+    .docscreen-upload-label:hover { background: #E0D4F7; transform: translateY(-1px); }
+    .docscreen-upload-label input[type="file"] { display: none; }
+    .docscreen-btn-row { display: flex; gap: 13px; width: 100%; margin-bottom: 19px; }
+    .docscreen-btn { border: none; border-radius: 11px; font-size: 1.05rem; font-weight: 600; padding: 13px 29px; cursor: pointer; transition: background 0.15s, color 0.12s; margin: 0; box-shadow: 0 2px 13px 0 rgba(162,89,255,0.09); letter-spacing: 0.01em; position: relative; }
+    .btn-analyze { background: var(--accent); color: #fff;}
+    .btn-analyze:hover { background: var(--btn-accent-hover);}
+    .docscreen-outputbox { width: 100%; min-height: 120px; max-height: 210px; border-radius: 14px; border: 1.6px solid #E9E6F7; background: #F8F6FC; color: #2a013f; font-size: 1.13rem; padding: 17px 17px; margin-bottom: 39px; outline: none; font-family: 'Inter', Arial, sans-serif; resize: vertical; font-weight: 500; }
+    .docscreen-icon { display: flex; align-items: center; justify-content: center; min-width: 246px; }
+    .docscreen-icon img { width: 266px; height: 253px; display: block; border-radius: 19px; background: transparent; box-shadow: none; object-fit: contain; }
+    footer { text-align: center; padding: 18px 0 8px 0; background: var(--footer-bg); color: #e0e0e0; font-size: 0.95em; margin-top: auto; box-shadow: none;}
+  </style>
+</head>
+<body>
+  <!-- ✦ NAVIGATION BAR (copied and updated) ✦ -->
+  <nav>
+    <div class="brand-logo">
+      <img src="/static/logo.png" alt="DocShift Logo" draggable="false" />
+    </div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/ai_resume_analyzer" role="menuitem" tabindex="-1">AI Resume Analyzer</a>
+          <a href="/ai_notes_generator" role="menuitem" tabindex="-1">AI Notes Generator</a>
+          <a href="/document_screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/word-to-pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/excel-to-pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/pdf-to-ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/history" role="menuitem" tabindex="0">History</a>
+      <!-- User Profile Dropdown -->
+      <div class="user-profile">
+        <img src="{{ user.profile_picture or '/static/user-profile.png' }}" 
+              alt="User Profile" 
+              class="profile-icon" 
+              draggable="false" />
+        <div class="profile-dropdown">
+          <a href="/profile" class="profile-dropdown-item">
+            My Profile
+          </a>
+          <a href="/settings" class="profile-dropdown-item">
+            Settings
+          </a>
+          <a href="/help" class="profile-dropdown-item">
+            Help & Support
+          </a>
+          <a href="/logout" class="profile-dropdown-item logout">
+            Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <div class="docscreen-outer">
+    <div class="docscreen-card">
+      <div class="docscreen-formside">
+        <h1>AI Notes Generator</h1>
+        <form id="notes-upload-form" enctype="multipart/form-data">
+          <div class="docscreen-input-row">
+            <label class="docscreen-upload-label" for="document" tabindex="0" style="cursor:pointer;">
+              Upload Document
+            </label>
+            <input type="file" name="document" id="document" accept=".pdf,.docx,.txt" required style="display:none;" />
+          </div>
+          <div class="file-display" id="fileDisplay" style="display:none; margin: 10px 0 16px 0; font-size: 0.97em; color: #6900ac; min-height: 1.3em;"></div>
+          <div class="docscreen-btn-row">
+            <button type="submit" class="docscreen-btn btn-analyze">Generate Notes</button>
+          </div>
+        </form>
+        <div id="results-container"></div>
+        <div id="download-links" style="margin-top:20px;"></div>
+      </div>
+      <div class="docscreen-icon">
+        <img src="/static/privacy.png" alt="Notes Generator Icon" />
+      </div>
+    </div>
+  </div>
+  <footer>© 2025 DocShift. All rights reserved.</footer>
+  <script>
+    // File input UX
+    const fileInput = document.getElementById('document');
+    const fileDisplay = document.getElementById('fileDisplay');
+    let fileList = [];
+    fileInput.addEventListener('change', function() {
+      fileList = Array.from(fileInput.files);
+      updateFileDisplay();
+    });
+    function updateFileDisplay() {
+      if (fileList.length > 0) {
+        fileDisplay.innerHTML = fileList.map((file, idx) =>
+          `<span>${file.name}</span> <button type="button" class="remove-btn" data-idx="${idx}" style="background-color:#ff3333;color:#fff;border:none;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:0.87em;margin-left:7px;">Remove</button>`
+        ).join('<br>');
+        fileDisplay.style.display = 'block';
+        fileDisplay.querySelectorAll('.remove-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const idx = parseInt(this.getAttribute('data-idx'));
+            fileList.splice(idx, 1);
+            updateFileListInput();
+            updateFileDisplay();
+          });
+        });
+      } else {
+        fileDisplay.innerHTML = '';
+        fileDisplay.style.display = 'none';
+        fileInput.value = '';
+      }
+    }
+    function updateFileListInput() {
+      const dt = new DataTransfer();
+      fileList.forEach(file => dt.items.add(file));
+      fileInput.files = dt.files;
+    }
+    document.getElementById('notes-upload-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData();
+      if (fileList.length > 0) formData.append('document', fileList[0]);
+      const resultsContainer = document.getElementById('results-container');
+      resultsContainer.innerHTML = '<div style="color:#A259FF;">Generating notes, please wait...</div>';
+      const response = await fetch('/ai_notes_generator', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if (data.notes) {
+        resultsContainer.innerHTML = `<div style="background:#F8F6FC;color:#2a013f;border-radius:12px;padding:18px 16px;margin-bottom:18px;white-space:pre-line;">${data.notes}</div>`;
+        document.getElementById('download-links').innerHTML = `
+          <button id="download-pdf-btn" class="docscreen-btn btn-analyze">Download PDF</button>
+          <button id="download-docx-btn" class="docscreen-btn btn-analyze">Download DOCX</button>
+        `;
+        document.getElementById('download-pdf-btn').onclick = function() {
+          triggerDownload('/download_ai_notes_pdf');
+        };
+        document.getElementById('download-docx-btn').onclick = function() {
+          triggerDownload('/download_ai_notes_docx');
+        };
+
+      function triggerDownload(url) {
+        fetch(url, { credentials: 'same-origin' })
+          .then(response => {
+            if (!response.ok) throw new Error('Download failed.');
+            const disposition = response.headers.get('Content-Disposition');
+            let filename = 'download';
+            if (disposition && disposition.indexOf('filename=') !== -1) {
+              filename = disposition.split('filename=')[1].replace(/"/g, '').split(';')[0];
+            }
+            return response.blob().then(blob => ({ blob, filename }));
+          })
+          .then(({ blob, filename }) => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+          })
+          .catch(err => {
+            alert('Download failed: ' + err.message);
+          });
+      }
+      } else {
+        resultsContainer.innerHTML = `<div style="color:red;">${data.error || 'An error occurred.'}</div>`;
+        document.getElementById('download-links').innerHTML = '';
+      }
+    });
+  </script>
+</body>
+</html>

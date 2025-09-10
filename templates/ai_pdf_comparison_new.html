@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI PDF Comparison - DocShift</title>
+  <link rel="icon" href="/static/favicon.png" type="image/x-icon" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --navbar-bg: transparent;
+      --footer-bg: transparent;
+      --white: #fff;
+      --accent: #A259FF;
+      --accent-dark: #400457;
+      --btn-black: #000;
+      --btn-accent-hover: #c193ff;
+    }
+    body { margin: 0; padding: 0; min-height: 100vh; background: linear-gradient(180deg, #000000 0%, #31004A 70%, #610094 100%); font-family: 'Inter', Arial, sans-serif; color: var(--white); display: flex; flex-direction: column; }
+    .docscreen-outer { min-height: calc(100vh - 110px); display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;}
+    .docscreen-card { background: #fff; border-radius: 22px; box-shadow: 0 4px 40px rgba(40,0,85,0.22); display: flex; align-items: stretch; max-width: 800px; min-width: 320px; width: 96vw; padding: 49px 54px 39px 42px; gap: 67px; margin: 55px auto 38px auto; }
+    .docscreen-formside { flex: 1 1 600px; display: flex; flex-direction: column; align-items: flex-start; min-width: 300px; }
+    .docscreen-formside h1 { font-size: 2.18rem; font-weight: 700; color: #1A0326; margin-bottom: 19px; margin-top:0; letter-spacing: 0.01em; }
+    .docscreen-input-row { width: 100%; display: flex; gap: 11px; margin-bottom: 20px; }
+    .docscreen-upload-label { display: flex; align-items: center; background: #EFEAFB; border-radius: 9px; padding: 10px 21px; color: #39126a; font-size: 1.1rem; font-weight: 600; cursor: pointer; user-select: none; border: none; outline:none; transition: background 0.15s, transform 0.1s; }
+    .docscreen-upload-label:hover { background: #E0D4F7; transform: translateY(-1px); }
+    .docscreen-upload-label input[type="file"] { display: none; }
+    .docscreen-btn-row { display: flex; gap: 13px; width: 100%; margin-bottom: 19px; }
+    .docscreen-btn { border: none; border-radius: 11px; font-size: 1.05rem; font-weight: 600; padding: 13px 29px; cursor: pointer; transition: background 0.15s, color 0.12s; margin: 0; box-shadow: 0 2px 13px 0 rgba(162,89,255,0.09); letter-spacing: 0.01em; position: relative; }
+    .btn-analyze { background: var(--accent); color: #fff;}
+    .btn-analyze:hover { background: var(--btn-accent-hover);}
+    .btn-download { background: #28a745; color: #fff; }
+    .btn-download:hover { background: #218838; }
+    .docscreen-outputbox { width: 100%; min-height: 120px; max-height: 210px; border-radius: 14px; border: 1.6px solid #E9E6F7; background: #F8F6FC; color: #2a013f; font-size: 1.13rem; padding: 17px 17px; margin-bottom: 39px; outline: none; font-family: 'Inter', Arial, sans-serif; resize: vertical; font-weight: 500; }
+    .file-display { margin: 10px 0 16px 0; font-size: 0.97em; color: #6900ac; min-height: 1.3em; }
+    .result-success { background:#E8F5E8; color:#1a4d1a; border-radius:12px; padding:18px 16px; margin-bottom:18px; }
+    .result-error { color:red; margin-top:18px; }
+    .upload-section { margin-bottom: 25px; padding: 20px; background: #f8f6fc; border-radius: 12px; border: 1.5px solid #e9e6f7; }
+    .upload-section h3 { color: #39126a; font-size: 1.15rem; margin: 0 0 12px 0; }
+
+    /* --- Navbar styles --- */
+    nav {
+      background: var(--navbar-bg);
+      height: 72px;
+      display: flex;
+      align-items: center;
+      padding: 0 48px;
+      box-sizing: border-box;
+      z-index: 1000;
+      position: relative;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      margin-right: 21px;
+      margin-top: 2px;
+    }
+    .brand-logo img {
+      height: 62px;
+      width: 138px;
+      object-fit: contain;
+      border-radius: 10px;
+      user-select: none;
+      -webkit-user-drag: none;
+      transition: box-shadow 0.25s;
+      background: transparent;
+    }
+    .nav-links {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 1.7rem;
+      height: 100%;
+      position: relative;
+      z-index: 1001;
+      flex-wrap: nowrap;
+    }
+    .nav-links a,
+    .dropdown-toggle {
+      color: var(--white);
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 1.13rem;
+      padding: 10px 18px 8px 18px;
+      border-radius: 8px;
+      transition: background 0.19s, color 0.18s, box-shadow 0.19s;
+      cursor: pointer;
+      background: none;
+      border: none;
+      outline: none;
+      display: inline-block;
+      white-space: nowrap;
+      user-select: none;
+      opacity: 0.93;
+      box-shadow: none;
+      position: relative;
+    }
+    .nav-links a.active,
+    .nav-links a:hover,
+    .dropdown-toggle:focus,
+    .dropdown-toggle:hover {
+      opacity: 1;
+      color: var(--white);
+    }
+    .user-profile {
+      position: relative;
+      display: inline-block;
+      margin-left: 10px;
+    }
+    .profile-icon {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      object-fit: cover;
+    }
+    .profile-icon:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+    }
+    .profile-dropdown {
+      display: none;
+      position: absolute;
+      top: 45px;
+      right: 0;
+      width: 200px;
+      height: 175px;
+      background: #1B0039;
+      opacity: 0.8;
+      border-radius: 20px 0px 20px 20px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      z-index: 9999;
+      padding: 8px 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      align-content: flex-start;
+    }
+    .user-profile:hover .profile-dropdown {
+      display: flex;
+      opacity: 0.8;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .profile-dropdown::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      right: 12px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 8px solid #1B0039;
+    }
+    .profile-dropdown-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      flex: 0 1 auto;
+      min-width: 120px;
+      margin: 4px;
+      border-radius: 8px;
+      justify-content: flex-start;
+      text-align: left;
+    }
+    .profile-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    .profile-dropdown-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    .profile-dropdown-item.logout:hover {
+      background-color: rgba(255, 107, 107, 0.1);
+    }
+    .dropdown { position: relative; display: inline-block; }
+    .dropdown-toggle::after {
+      content: '\25BC';
+      margin-left: 7px;
+      font-size: 0.8em;
+      vertical-align: middle;
+      transition: transform 0.2s;
+    }
+    .dropdown:focus-within .dropdown-toggle::after, .dropdown:hover .dropdown-toggle::after {
+      transform: rotate(180deg);
+    }
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 58px;
+      left: -120px;
+      background: #fff;
+      box-shadow: 0 14px 42px 0 rgba(40,25,67,0.22),0 2px 12px 0 rgba(40,25,67,0.12);
+      border-radius: 17px;
+      z-index: 9999;
+      padding: 15px 26px 11px 17px;
+      min-width: 410px;
+      max-width: 540px;
+      grid-template-columns: repeat(2,1fr);
+      gap: 9px 11px;
+    }
+    .dropdown:hover .dropdown-content, .dropdown:focus-within .dropdown-content {
+      display: grid;
+    }
+    .dropdown-content a {
+      color: #14131c;
+      font-weight: 700;
+      background: #fff;
+      padding: 13px 20px 11px 16px;
+      border-radius: 11px;
+      font-size: 1.05rem;
+      transition: background 0.13s, color 0.11s;
+      text-decoration: none;
+      border: none;
+      display: block;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+      box-shadow: none;
+      margin: 0;
+      outline: none;
+      text-align: left;
+    }
+    .dropdown-content a:hover, .dropdown-content a:focus {
+      background: #dedcff;
+      color: #21003b;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand-logo">
+      <img src="/static/logo.png" alt="DocShift Logo" draggable="false" />
+    </div>
+    <div class="nav-links" role="menubar" aria-label="Primary navigation">
+      <a href="/" class="active" role="menuitem" tabindex="0">Home</a>
+      <div class="dropdown" tabindex="0" role="menuitem" aria-haspopup="true" aria-expanded="false">
+        <a href="#" class="dropdown-toggle" aria-haspopup="true" aria-expanded="false">All Tools</a>
+        <div class="dropdown-content" role="menu" aria-label="All Tools">
+          <a href="/merge-pdfs" role="menuitem" tabindex="-1">Merge PDFs</a>
+          <a href="/convert/image-to-pdf" role="menuitem" tabindex="-1">Image to PDF</a>
+          <a href="/split-pdf" role="menuitem" tabindex="-1">Split PDF</a>
+          <a href="/remove-pages-ui" role="menuitem" tabindex="-1">Remove Pages</a>
+          <a href="/ai-pdf-editor" role="menuitem" tabindex="-1">AI PDF Editor</a>
+          <a href="/ai_resume_analyzer" role="menuitem" tabindex="-1">AI Resume Analyzer</a>
+          <a href="/ai_table_converter" role="menuitem" tabindex="-1">AI Table Converter</a>
+          <a href="/ai_notes_generator" role="menuitem" tabindex="-1">AI Notes Generator</a>
+          <a href="/ai_pdf_comparison" role="menuitem" tabindex="-1">AI PDF Comparison</a>
+          <a href="/document_screener" role="menuitem" tabindex="-1">Document Screener</a>
+          <a href="/plagiarism-scanner" role="menuitem" tabindex="-1">Plagiarism Scanner</a>
+          <a href="/text-summarizer" role="menuitem" tabindex="-1">Summarize Text</a>
+          <a href="/speech-to-text" role="menuitem" tabindex="-1">Speech to Text</a>
+          <a href="/text-to-speech" role="menuitem" tabindex="-1">Text to Speech</a>
+          <a href="/pdf-to-image" role="menuitem" tabindex="-1">PDF to Image</a>
+          <a href="/word-to-pdf" role="menuitem" tabindex="-1">Word to PDF</a>
+          <a href="/excel-to-pdf" role="menuitem" tabindex="-1">Excel to PDF</a>
+          <a href="/pdf-to-ppt" role="menuitem" tabindex="-1">PDF to PPT</a>
+          <a href="/bg-remover" role="menuitem" tabindex="-1">Background Remover</a>
+          <a href="/compress-pdf" role="menuitem" tabindex="-1">Compress PDF</a>
+        </div>
+      </div>
+      <a href="/history" role="menuitem" tabindex="0">History</a>
+      <!-- User Profile Dropdown -->
+      <div class="user-profile">
+        <img src="{{ user.profile_picture or '/static/user-profile.png' }}" 
+              alt="User Profile" 
+              class="profile-icon" 
+              draggable="false" />
+        <div class="profile-dropdown">
+          <a href="/profile" class="profile-dropdown-item">
+            My Profile
+          </a>
+          <a href="/settings" class="profile-dropdown-item">
+            Settings
+          </a>
+          <a href="/help" class="profile-dropdown-item">
+            Help & Support
+          </a>
+          <a href="/logout" class="profile-dropdown-item logout">
+            Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <div class="docscreen-outer">
+    <div class="docscreen-card">
+      <div class="docscreen-formside">
+        <h1>AI PDF Comparison</h1>
+        <p style="color:#8B7BA8;font-size:0.97em;margin-bottom:25px;line-height:1.4;">
+          Upload two PDF documents to get an AI-powered comparison report highlighting differences, additions, and modifications.
+        </p>
+        
+        <form id="pdf-comparison-form" enctype="multipart/form-data">
+          <div class="upload-section">
+            <h3>Original Document (Version A)</h3>
+            <div class="docscreen-input-row">
+              <label class="docscreen-upload-label" for="file_a" tabindex="0" style="cursor:pointer;">
+                Choose PDF File A
+                <input type="file" name="file_a" id="file_a" accept=".pdf" required />
+              </label>
+            </div>
+            <div class="file-display" id="fileDisplayA"></div>
+          </div>
+
+          <div class="upload-section">
+            <h3>Updated Document (Version B)</h3>
+            <div class="docscreen-input-row">
+              <label class="docscreen-upload-label" for="file_b" tabindex="0" style="cursor:pointer;">
+                Choose PDF File B
+                <input type="file" name="file_b" id="file_b" accept=".pdf" required />
+              </label>
+            </div>
+            <div class="file-display" id="fileDisplayB"></div>
+          </div>
+
+          <div class="docscreen-btn-row">
+            <button type="submit" class="docscreen-btn btn-analyze">Compare Documents</button>
+          </div>
+        </form>
+
+        <div id="result-container"></div>
+        
+        <!-- Preview Section -->
+        <div id="preview-wrapper" style="display:none; width:100%; margin-top:25px;">
+          <h3 style="color:#39126a;font-size:1.2rem;margin:15px 0 10px 0;">Comparison Preview</h3>
+          
+          <!-- Executive Summary Section -->
+          <div id="summary-section" style="background:#E8F5E8;border-radius:12px;padding:15px;margin-bottom:15px;">
+            <h4 style="color:#1a4d1a;margin:0 0 8px 0;font-size:1.1rem;">Executive Summary</h4>
+            <div id="summary-content" style="color:#1a4d1a;line-height:1.4;"></div>
+            <div id="metadata-info" style="color:#666;font-size:0.9rem;margin-top:10px;border-top:1px solid #d4edda;padding-top:8px;"></div>
+          </div>
+          
+          <!-- Changes Table -->
+          <div id="changes-wrapper">
+            <h4 style="color:#39126a;font-size:1.1rem;margin:15px 0 8px 0;">Detailed Changes</h4>
+            <div style="max-height:400px;overflow:auto;border:1px solid #d8cbed;border-radius:10px;background:#faf7ff;">
+              <table style="width:100%;border-collapse:collapse;font-size:0.85rem;word-break:break-word;table-layout:fixed;color:#000;">
+                <thead style="position:sticky;top:0;background:#efe7fa;z-index:10;">
+                  <tr>
+                    <th style="width:20%;padding:8px;border:1px solid #ccb9e6;text-align:left;font-weight:600;color:#000;">Section</th>
+                    <th style="width:15%;padding:8px;border:1px solid #ccb9e6;text-align:center;font-weight:600;color:#000;">Status</th>
+                    <th style="width:32.5%;padding:8px;border:1px solid #ccb9e6;text-align:left;font-weight:600;color:#000;">Original Content</th>
+                    <th style="width:32.5%;padding:8px;border:1px solid #ccb9e6;text-align:left;font-weight:600;color:#000;">Updated Content</th>
+                  </tr>
+                </thead>
+                <tbody id="changes-content">
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="docscreen-btn-row" style="margin-top:20px;">
+            <button type="button" id="downloadPdfBtn" class="docscreen-btn btn-download" style="display:none;">Download PDF Report</button>
+            <button type="button" id="downloadDocxBtn" class="docscreen-btn btn-download" style="display:none;">Download Word Report</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer style="text-align:center;padding:18px 0 8px 0;background:var(--footer-bg);color:#e0e0e0;font-size:0.95em;margin-top:auto;box-shadow:none;">© 2025 DocShift. All rights reserved.</footer>
+  
+  <script>
+    // File input handling - using the same pattern as other tools
+    const fileInputA = document.getElementById('file_a');
+    const fileInputB = document.getElementById('file_b');
+    const fileDisplayA = document.getElementById('fileDisplayA');
+    const fileDisplayB = document.getElementById('fileDisplayB');
+
+    let fileListA = [];
+    let fileListB = [];
+
+    fileInputA.addEventListener('change', function() {
+      fileListA = Array.from(fileInputA.files);
+      updateFileDisplay('A');
+    });
+
+    fileInputB.addEventListener('change', function() {
+      fileListB = Array.from(fileInputB.files);
+      updateFileDisplay('B');
+    });
+
+    function updateFileDisplay(type) {
+      const fileList = type === 'A' ? fileListA : fileListB;
+      const fileDisplay = type === 'A' ? fileDisplayA : fileDisplayB;
+      
+      if (fileList.length > 0) {
+        const file = fileList[0];
+        fileDisplay.innerHTML = `
+          <span style="color:#28a745;font-weight:600;">${file.name}</span> 
+          <button type="button" class="remove-btn" onclick="removeFile('${type}')" 
+                  style="background-color:#ff3333;color:#fff;border:none;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:0.87em;margin-left:7px;">
+            Remove
+          </button>
+        `;
+        fileDisplay.style.display = 'block';
+        fileDisplay.style.visibility = 'visible';
+      } else {
+        fileDisplay.innerHTML = '';
+        fileDisplay.style.display = 'none';
+      }
+    }
+
+    function removeFile(type) {
+      if (type === 'A') {
+        fileListA = [];
+        fileInputA.value = '';
+        updateFileDisplay('A');
+      } else {
+        fileListB = [];
+        fileInputB.value = '';
+        updateFileDisplay('B');
+      }
+    }
+
+    // Form submission
+    document.getElementById('pdf-comparison-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      if (fileListA.length === 0 || fileListB.length === 0) {
+        alert('Please select both PDF files before comparing.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file_a', fileListA[0]);
+      formData.append('file_b', fileListB[0]);
+
+      const resultContainer = document.getElementById('result-container');
+      resultContainer.innerHTML = '<div style="color:#A259FF;">Comparing documents, please wait...</div>';
+
+      try {
+        const response = await fetch('/ai_pdf_comparison', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'ok') {
+          resultContainer.innerHTML = `<div class="result-success">Comparison completed successfully!</div>`;
+          displayResults(data);
+        } else {
+          resultContainer.innerHTML = `<div class="result-error">${data.error || 'Comparison failed.'}</div>`;
+        }
+      } catch (error) {
+        resultContainer.innerHTML = `<div class="result-error">Network error occurred. Please try again.</div>`;
+      }
+    });
+
+    function displayResults(data) {
+      // Show summary with metadata
+      document.getElementById('summary-content').innerHTML = data.summary;
+      
+      // Show metadata information
+      const metadataInfo = document.getElementById('metadata-info');
+      metadataInfo.innerHTML = `
+        <strong>Files compared:</strong> ${data.metadata.file_a_name} ↔ ${data.metadata.file_b_name}<br>
+        <strong>Total changes found:</strong> ${data.total_changes}<br>
+        <strong>Generated:</strong> ${data.metadata.generated_at}
+      `;
+      
+      // Build changes table
+      const changesContainer = document.getElementById('changes-content');
+      changesContainer.innerHTML = '';
+      
+      if (data.preview_changes && data.preview_changes.length > 0) {
+        data.preview_changes.forEach((change, index) => {
+          const row = document.createElement('tr');
+          row.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#f9f9f9';
+          
+          // Helper function to truncate and wrap text
+          function formatCellText(text, maxLength = 200) {
+            if (!text) return '<em>N/A</em>';
+            let displayText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+            // Replace newlines with <br> for better display
+            return displayText.replace(/\n/g, '<br>');
+          }
+          
+          // Status styling
+          let statusClass = '';
+          let statusText = change.status || 'unknown';
+          switch(statusText.toLowerCase()) {
+            case 'added':
+              statusClass = 'color:#28a745;font-weight:600;';
+              statusText = '✓ ADDED';
+              break;
+            case 'removed':
+              statusClass = 'color:#dc3545;font-weight:600;';
+              statusText = '✗ REMOVED';
+              break;
+            case 'modified':
+              statusClass = 'color:#ffc107;font-weight:600;';
+              statusText = '⚠ MODIFIED';
+              break;
+            default:
+              statusClass = 'color:#6c757d;';
+          }
+          
+          row.innerHTML = `
+            <td style="padding:8px;border:1px solid #e2d5f3;vertical-align:top;word-wrap:break-word;">
+              <strong>${change.section || 'Section ' + (index + 1)}</strong>
+            </td>
+            <td style="padding:8px;border:1px solid #e2d5f3;text-align:center;vertical-align:top;${statusClass}">
+              ${statusText}
+            </td>
+            <td style="padding:8px;border:1px solid #e2d5f3;vertical-align:top;word-wrap:break-word;font-size:0.8rem;">
+              ${formatCellText(change.old)}
+            </td>
+            <td style="padding:8px;border:1px solid #e2d5f3;vertical-align:top;word-wrap:break-word;font-size:0.8rem;">
+              ${formatCellText(change.new)}
+            </td>
+          `;
+          
+          changesContainer.appendChild(row);
+        });
+        
+        // Add note if there are more changes
+        if (data.total_changes > data.preview_changes.length) {
+          const noteRow = document.createElement('tr');
+          noteRow.innerHTML = `
+            <td colspan="4" style="padding:12px;text-align:center;font-style:italic;color:#666;background:#f8f9fa;border:1px solid #e2d5f3;">
+              Showing first ${data.preview_changes.length} of ${data.total_changes} changes. Download full report to see all changes.
+            </td>
+          `;
+          changesContainer.appendChild(noteRow);
+        }
+      } else {
+        changesContainer.innerHTML = `
+          <tr>
+            <td colspan="4" style="padding:20px;text-align:center;color:#666;font-style:italic;">
+              No significant changes detected between the documents.
+            </td>
+          </tr>
+        `;
+      }
+      
+      // Show the preview wrapper and download buttons
+      document.getElementById('preview-wrapper').style.display = 'block';
+      document.getElementById('downloadPdfBtn').style.display = 'inline-block';
+      document.getElementById('downloadDocxBtn').style.display = 'inline-block';
+    }
+
+    // Download handlers
+    document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('downloadPdfBtn');
+      btn.disabled = true;
+      btn.textContent = 'Generating PDF...';
+      try {
+        const res = await fetch('/download_comparison_pdf');
+        if (!res.ok) throw new Error('Failed');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `comparison_report.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          a.remove();
+        }, 500);
+        btn.textContent = 'Download PDF Report';
+      } catch (e) {
+        alert('PDF download failed');
+        btn.textContent = 'Download PDF Report';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('downloadDocxBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('downloadDocxBtn');
+      btn.disabled = true;
+      btn.textContent = 'Generating DOCX...';
+      try {
+        const res = await fetch('/download_comparison_docx');
+        if (!res.ok) throw new Error('Failed');
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `comparison_report.docx`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          a.remove();
+        }, 500);
+        btn.textContent = 'Download Word Report';
+      } catch (e) {
+        alert('DOCX download failed');
+        btn.textContent = 'Download Word Report';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
